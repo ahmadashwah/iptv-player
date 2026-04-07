@@ -805,22 +805,14 @@ function playVOD(m) {
   const { server, username } = S.cfg;
   const base = server.replace(/\/+$/, '');
   const ext  = m.container_extension || 'mp4';
+  // Always try HLS first — server redirects to same backend regardless of ext
   const url  = `${base}/movie/${username}/${S.password}/${m.stream_id}.${ext}`;
 
   updateEPGChannel(m.name);
   clearEPGBar();
   id('epgNowTitle').textContent = m.plot ? m.plot.substring(0, 80) + (m.plot.length > 80 ? '…' : '') : '—';
 
-  if (ext === 'm3u8') {
-    hlsPlay(px(url));
-  } else {
-    // Direct play for mp4/mkv etc
-    const video = id('player');
-    if (S.hls) { S.hls.destroy(); S.hls = null; }
-    video.src = px(url);
-    video.play().catch(() => {});
-    video.addEventListener('playing', () => { id('overlay').style.display = 'none'; }, { once: true });
-  }
+  hlsPlay(px(url), px(`${base}/movie/${username}/${S.password}/${m.stream_id}.mp4`));
 }
 
 // ─── Series browser ───────────────────────────────────────────────────────────
@@ -925,26 +917,21 @@ function playEpisode(ep) {
   clearEPGBar();
   id('epgNowTitle').textContent = ep.title || `Episode ${ep.episode_num}`;
 
-  if (ext === 'm3u8') {
-    hlsPlay(px(url));
-  } else {
-    const video = id('player');
-    if (S.hls) { S.hls.destroy(); S.hls = null; }
-    video.src = px(url);
-    video.play().catch(() => {});
-    video.addEventListener('playing', () => { id('overlay').style.display = 'none'; }, { once: true });
-  }
+  // Always use HLS path — server backend serves same content regardless of ext
+  hlsPlay(px(url), px(`${base}/series/${username}/${S.password}/${ep.id}.mp4`));
 }
 
 function hideSeriesModal() { id('seriesModal').style.display = 'none'; }
 function onSeriesModalBg(e) { if (e.target === id('seriesModal')) hideSeriesModal(); }
 
 // ─── HLS ──────────────────────────────────────────────────────────────────────
-function hlsPlay(url) {
+function hlsPlay(url, nativeFallback) {
   const video = id('player');
   if (S.hls) { S.hls.destroy(); S.hls = null; }
 
   video.addEventListener('playing', () => { id('overlay').style.display = 'none'; }, { once: true });
+
+  const fallback = nativeFallback || url;
 
   if (Hls.isSupported()) {
     const hls = new Hls({ enableWorker: true });
@@ -954,14 +941,23 @@ function hlsPlay(url) {
     hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
     hls.on(Hls.Events.ERROR, (_, d) => {
       if (!d.fatal) return;
-      if      (d.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
-      else if (d.type === Hls.ErrorTypes.MEDIA_ERROR)   hls.recoverMediaError();
-      else { hls.destroy(); S.hls = null; video.src = url; video.play().catch(() => {}); }
+      if (d.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        hls.startLoad();
+      } else if (d.type === Hls.ErrorTypes.MEDIA_ERROR) {
+        hls.recoverMediaError();
+      } else {
+        // HLS failed — try native MP4 fallback
+        hls.destroy(); S.hls = null;
+        video.src = fallback;
+        video.play().catch(() => {});
+      }
     });
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    // Safari native HLS
     video.src = url; video.play().catch(() => {});
   } else {
-    toast('HLS not supported in this browser', 'err');
+    // Last resort: native video element (mp4)
+    video.src = fallback; video.play().catch(() => {});
   }
 }
 

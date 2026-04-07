@@ -22,7 +22,6 @@ app.options('*', (_, res) => res.sendStatus(204));
 app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 // ── Generic proxy ─────────────────────────────────────────────────────────────
-// GET /proxy?url=<encoded-target-url>
 app.get('/proxy', (req, res) => {
   const rawUrl = req.query.url;
   if (!rawUrl) return res.status(400).json({ error: 'Missing ?url= parameter' });
@@ -31,11 +30,13 @@ app.get('/proxy', (req, res) => {
   try { target = new URL(rawUrl); }
   catch { return res.status(400).json({ error: 'Invalid URL' }); }
 
-  fetchRemote(target.toString(), res, 0);
+  // Forward Range header so video seeking works
+  const range = req.headers['range'];
+  fetchRemote(target.toString(), res, 0, range);
 });
 
 // ── Core fetch + redirect follower ────────────────────────────────────────────
-function fetchRemote(url, res, hops) {
+function fetchRemote(url, res, hops, range) {
   if (hops > 5) return res.status(502).json({ error: 'Too many redirects' });
 
   let parsed;
@@ -44,34 +45,36 @@ function fetchRemote(url, res, hops) {
 
   const mod = parsed.protocol === 'https:' ? https : http;
 
+  const reqHeaders = {
+    'User-Agent': 'Mozilla/5.0 (IPTV-Proxy/1.0)',
+    'Accept':     '*/*',
+  };
+  if (range) reqHeaders['Range'] = range;
+
   const opts = {
     hostname: parsed.hostname,
     port:     parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
     path:     parsed.pathname + parsed.search,
     method:   'GET',
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (IPTV-Proxy/1.0)',
-      'Accept':     '*/*',
-    },
-    timeout: 20_000,
+    headers:  reqHeaders,
+    timeout:  30_000,
   };
 
   const req = mod.request(opts, upRes => {
-    // Follow redirects
+    // Follow redirects (preserve range header)
     if ([301, 302, 303, 307, 308].includes(upRes.statusCode)) {
       const loc = upRes.headers.location;
       if (loc) {
         const next = loc.startsWith('http') ? loc : new URL(loc, url).toString();
-        upRes.resume(); // drain body
-        return fetchRemote(next, res, hops + 1);
+        upRes.resume();
+        return fetchRemote(next, res, hops + 1, range);
       }
     }
 
-    const ct      = (upRes.headers['content-type'] || '').toLowerCase();
-    const isM3U8  = ct.includes('mpegurl') || /\.m3u8?(\?|$)/i.test(parsed.pathname);
+    const ct     = (upRes.headers['content-type'] || '').toLowerCase();
+    const isM3U8 = ct.includes('mpegurl') || /\.m3u8?(\?|$)/i.test(parsed.pathname);
 
     if (isM3U8) {
-      // Read full manifest, rewrite internal URLs, forward
       let body = '';
       upRes.setEncoding('utf8');
       upRes.on('data', d => body += d);
@@ -82,12 +85,17 @@ function fetchRemote(url, res, hops) {
         res.send(rewriteM3U8(body, url));
       });
     } else {
-      // Pass through binary (TS segments, JSON, images, …)
       if (res.headersSent) return;
+      // Forward relevant headers including range-related ones
       const passHeaders = {};
-      for (const h of ['content-type', 'content-length', 'cache-control']) {
+      for (const h of [
+        'content-type', 'content-length', 'content-range',
+        'accept-ranges', 'cache-control', 'last-modified', 'etag',
+      ]) {
         if (upRes.headers[h]) passHeaders[h] = upRes.headers[h];
       }
+      // Always advertise range support so the browser can seek
+      if (!passHeaders['accept-ranges']) passHeaders['accept-ranges'] = 'bytes';
       res.writeHead(upRes.statusCode, passHeaders);
       upRes.pipe(res);
     }
@@ -104,7 +112,6 @@ function fetchRemote(url, res, hops) {
 }
 
 // ── M3U8 URL rewriter ─────────────────────────────────────────────────────────
-// Rewrites every non-comment line and EXT-X-KEY URI to go through /proxy
 function rewriteM3U8(content, baseUrl) {
   const base = new URL(baseUrl);
 
@@ -119,16 +126,10 @@ function rewriteM3U8(content, baseUrl) {
 
   return content.split('\n').map(line => {
     const t = line.trim();
-
-    // Rewrite DRM key URIs inside EXT-X-KEY tags
     if (t.startsWith('#EXT-X-KEY') && t.includes('URI=')) {
       return line.replace(/URI="([^"]+)"/g, (_, uri) => `URI="${toProxy(uri)}"`);
     }
-
-    // Skip other comment/tag lines and blank lines
     if (!t || t.startsWith('#')) return line;
-
-    // Segment / sub-playlist URL
     return toProxy(t);
   }).join('\n');
 }
