@@ -805,14 +805,17 @@ function playVOD(m) {
   const { server, username } = S.cfg;
   const base = server.replace(/\/+$/, '');
   const ext  = m.container_extension || 'mp4';
-  // Always try HLS first — server redirects to same backend regardless of ext
-  const url  = `${base}/movie/${username}/${S.password}/${m.stream_id}.${ext}`;
+  const url = `${base}/movie/${username}/${S.password}/${m.stream_id}.${ext}`;
 
   updateEPGChannel(m.name);
   clearEPGBar();
   id('epgNowTitle').textContent = m.plot ? m.plot.substring(0, 80) + (m.plot.length > 80 ? '…' : '') : '—';
 
-  hlsPlay(px(url), px(`${base}/movie/${username}/${S.password}/${m.stream_id}.mp4`));
+  if (ext === 'm3u8') {
+    hlsPlay(px(url));
+  } else {
+    playDirect(px(url));
+  }
 }
 
 // ─── Series browser ───────────────────────────────────────────────────────────
@@ -917,12 +920,29 @@ function playEpisode(ep) {
   clearEPGBar();
   id('epgNowTitle').textContent = ep.title || `Episode ${ep.episode_num}`;
 
-  // Always use HLS path — server backend serves same content regardless of ext
-  hlsPlay(px(url), px(`${base}/series/${username}/${S.password}/${ep.id}.mp4`));
+  if ((ep.container_extension || 'mp4') === 'm3u8') {
+    hlsPlay(px(url));
+  } else {
+    playDirect(px(url));
+  }
 }
 
 function hideSeriesModal() { id('seriesModal').style.display = 'none'; }
 function onSeriesModalBg(e) { if (e.target === id('seriesModal')) hideSeriesModal(); }
+
+// ─── Direct video (MP4 / MKV / AVI etc.) ─────────────────────────────────────
+function playDirect(url) {
+  const video = id('player');
+  if (S.hls) { S.hls.destroy(); S.hls = null; }
+  video.src = url;
+  video.load();
+  video.play().catch(() => {});
+  video.addEventListener('playing', () => { id('overlay').style.display = 'none'; }, { once: true });
+  video.addEventListener('error', () => {
+    id('overlayStatus').textContent = 'Format not supported by your browser';
+    id('overlay').style.display = 'flex';
+  }, { once: true });
+}
 
 // ─── HLS ──────────────────────────────────────────────────────────────────────
 function hlsPlay(url, nativeFallback) {

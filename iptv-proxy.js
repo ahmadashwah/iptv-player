@@ -94,8 +94,8 @@ function fetchRemote(url, res, hops, range) {
       ]) {
         if (upRes.headers[h]) passHeaders[h] = upRes.headers[h];
       }
-      // Always advertise range support so the browser can seek
-      if (!passHeaders['accept-ranges']) passHeaders['accept-ranges'] = 'bytes';
+      // Always advertise correct range support so the browser can seek
+      passHeaders['accept-ranges'] = 'bytes';
       res.writeHead(upRes.statusCode, passHeaders);
       upRes.pipe(res);
     }
