@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPTV Player</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
+<style>
+:root {
+  --bg:        #0b0b14;
+  --surface:   #13131f;
+  --surface2:  #1c1c2e;
+  --border:    #252540;
+  --accent:    #7b6ef6;
+  --accent-lo: rgba(123,110,246,.18);
+  --text:      #e2e2f0;
+  --muted:     #6b6b85;
+  --live:      #4ade80;
+  --err:       #f87171;
+  --gold:      #f5c842;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Topbar ─────────────────────────────────────────────────────────────── */
+#topbar {
+  height: 52px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+.logo {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.logo em { color: var(--text); font-style: normal; }
+
+#searchInput {
+  flex: 1;
+  max-width: 260px;
+  height: 32px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 12px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+#searchInput::placeholder { color: var(--muted); }
+#searchInput:focus { border-color: var(--accent); }
+.spacer { flex: 1; }
+.btn {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.btn:hover  { opacity: .82; }
+.btn:active { opacity: .68; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-ghost   { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+#layout { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Sidebar ────────────────────────────────────────────────────────────── */
+#sidebar {
+  width: 295px;
+  min-width: 295px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* Mode switcher */
+#modeSwitch {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.mode-btn {
+  flex: 1;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  letter-spacing: .3px;
+}
+.mode-btn:hover  { color: var(--text); }
+.mode-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Category strip */
+#catStrip {
+  padding: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 100px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.cat-btn {
+  padding: 3px 9px;
+  border-radius: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.cat-btn:hover  { color: var(--text); border-color: var(--accent); }
+.cat-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* Channel count */
+#chCount {
+  padding: 3px 12px;
+  font-size: 11px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 22px;
+}
+
+/* Channel / content list */
+#channelList { flex: 1; overflow-y: auto; }
+
+/* ── Live channel item ───────────────────────────────────────────────────── */
+.ch-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .1s;
+  position: relative;
+}
+.ch-item:hover  { background: var(--surface2); }
+.ch-item.active { background: var(--accent-lo); border-left: 3px solid var(--accent); padding-left: 9px; }
+.ch-num { font-size: 11px; color: var(--muted); min-width: 22px; text-align: right; flex-shrink: 0; }
+.ch-logo {
+  width: 34px; height: 34px; border-radius: 4px;
+  background: var(--surface2); object-fit: contain; flex-shrink: 0;
+}
+.ch-fb {
+  width: 34px; height: 34px; border-radius: 4px;
+  background: var(--surface2); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.ch-info  { flex: 1; min-width: 0; }
+.ch-name  { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch-prog  { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--live); flex-shrink: 0;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+/* ── VOD item ────────────────────────────────────────────────────────────── */
+.vod-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .1s;
+  position: relative;
+}
+.vod-item:hover  { background: var(--surface2); }
+.vod-item.active { background: var(--accent-lo); border-left: 3px solid var(--accent); padding-left: 9px; }
+.vod-poster {
+  width: 38px; height: 52px; border-radius: 4px;
+  background: var(--surface2); object-fit: cover; flex-shrink: 0;
+}
+.vod-poster-fb {
+  width: 38px; height: 52px; border-radius: 4px;
+  background: var(--surface2); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+}
+.vod-info { flex: 1; min-width: 0; }
+.vod-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vod-meta  { font-size: 11px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; }
+.vod-rating { color: var(--gold); font-size: 11px; }
+
+/* ── Series item ─────────────────────────────────────────────────────────── */
+.ser-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .1s;
+}
+.ser-item:hover  { background: var(--surface2); }
+.ser-poster {
+  width: 38px; height: 52px; border-radius: 4px;
+  background: var(--surface2); object-fit: cover; flex-shrink: 0;
+}
+.ser-poster-fb {
+  width: 38px; height: 52px; border-radius: 4px;
+  background: var(--surface2); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+}
+.ser-info   { flex: 1; min-width: 0; }
+.ser-title  { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ser-meta   { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.ser-arrow  { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+
+.ch-empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 48px 16px;
+  gap: 8px; color: var(--muted); font-size: 13px; text-align: center;
+}
+.ch-empty .icon { font-size: 36px; }
+
+/* ── Player wrap ─────────────────────────────────────────────────────────── */
+#playerWrap {
+  flex: 1; display: flex; flex-direction: column;
+  background: #000; min-width: 0;
+}
+#videoArea { flex: 1; position: relative; background: #000; overflow: hidden; }
+video { width: 100%; height: 100%; display: block; background: #000; }
+#overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; color: var(--muted); pointer-events: none;
+  background: radial-gradient(ellipse at center, #0d0d1a 0%, #000 100%);
+}
+.ov-icon { font-size: 72px; }
+.ov-text { font-size: 15px; }
+.ov-sub  { font-size: 12px; }
+
+/* ── EPG bar ─────────────────────────────────────────────────────────────── */
+#epgBar {
+  background: var(--surface); border-top: 1px solid var(--border);
+  height: 62px; padding: 0 16px;
+  display: flex; align-items: center; gap: 16px;
+  flex-shrink: 0; overflow: hidden;
+}
+.epg-chname {
+  font-size: 12px; font-weight: 700; color: var(--accent);
+  max-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0;
+}
+.epg-vdiv { width: 1px; height: 38px; background: var(--border); flex-shrink: 0; }
+.epg-slot { flex: 1; min-width: 0; }
+.epg-lbl  { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 2px; }
+.epg-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.epg-time  { font-size: 11px; color: var(--muted); }
+.epg-prog  { flex: 1.4; min-width: 80px; }
+.prog-track { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+.prog-fill  { height: 100%; background: var(--accent); border-radius: 2px; min-width: 3px; transition: width 60s linear; }
+.prog-pct   { font-size: 10px; color: var(--muted); }
+
+/* ── Settings modal ──────────────────────────────────────────────────────── */
+.modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,.75);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; z-index: 50;
+}
+.modal-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 28px;
+  width: 440px; max-width: calc(100vw - 32px);
+}
+.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 22px; }
+.field { margin-bottom: 15px; }
+.field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+.field input {
+  width: 100%; height: 38px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0 12px;
+  color: var(--text); font-size: 14px; outline: none;
+}
+.field input:focus { border-color: var(--accent); }
+.field-note { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+
+/* ── Series info modal ───────────────────────────────────────────────────── */
+#seriesModal .modal-box {
+  width: 680px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+.ser-modal-header {
+  display: flex;
+  gap: 18px;
+  padding: 22px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.ser-modal-cover {
+  width: 80px; height: 110px; border-radius: 6px;
+  object-fit: cover; background: var(--surface2); flex-shrink: 0;
+}
+.ser-modal-cover-fb {
+  width: 80px; height: 110px; border-radius: 6px;
+  background: var(--surface2); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 36px;
+}
+.ser-modal-meta { flex: 1; min-width: 0; }
+.ser-modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.ser-modal-genre { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.ser-modal-rating { font-size: 13px; color: var(--gold); margin-bottom: 8px; }
+.ser-modal-plot  { font-size: 12px; color: var(--muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ser-modal-close { position: absolute; top: 14px; right: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; color: var(--muted); }
+.ser-modal-close:hover { color: var(--text); }
+
+.season-tabs { display: flex; gap: 4px; padding: 10px 22px; border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; }
+.season-btn { padding: 4px 12px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); font-size: 12px; cursor: pointer; white-space: nowrap; transition: all .15s; }
+.season-btn:hover  { color: var(--text); border-color: var(--accent); }
+.season-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.episode-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+.ep-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 22px; cursor: pointer; transition: background .1s;
+  border-bottom: 1px solid var(--border);
+}
+.ep-item:hover { background: var(--surface2); }
+.ep-num { font-size: 12px; color: var(--muted); min-width: 28px; text-align: right; flex-shrink: 0; }
+.ep-thumb {
+  width: 64px; height: 36px; border-radius: 3px;
+  object-fit: cover; background: var(--surface2); flex-shrink: 0;
+}
+.ep-thumb-fb {
+  width: 64px; height: 36px; border-radius: 3px;
+  background: var(--surface2); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+}
+.ep-info  { flex: 1; min-width: 0; }
+.ep-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ep-dur   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.ep-play  { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); border: none; color: #fff; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ep-play:hover { opacity: .85; }
+.ser-loading { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 32px; color: var(--muted); font-size: 13px; }
+
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 78px; left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 18px;
+  font-size: 13px; opacity: 0; pointer-events: none;
+  transition: opacity .2s, transform .2s; z-index: 99; white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.ok   { border-color: var(--live); color: var(--live); }
+#toast.err  { border-color: var(--err);  color: var(--err);  }
+
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+.spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .65s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-row { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 28px 16px; color: var(--muted); font-size: 13px; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- ── Topbar ──────────────────────────────────────────────────────────────── -->
+<div id="topbar">
+  <div class="logo">IPTV<em>.</em></div>
+  <input type="text" id="searchInput" placeholder="Search…" autocomplete="off" oninput="onSearch()">
+  <div class="spacer"></div>
+  <button class="btn btn-ghost" onclick="showSettings()">⚙ Settings</button>
+  <button class="btn btn-primary" id="loadBtn" onclick="loadCurrent()">Load</button>
+</div>
+
+<!-- ── Main layout ─────────────────────────────────────────────────────────── -->
+<div id="layout">
+  <div id="sidebar">
+
+    <!-- Mode switcher -->
+    <div id="modeSwitch">
+      <button class="mode-btn active" data-mode="live"   onclick="switchMode('live')">📺 Live TV</button>
+      <button class="mode-btn"        data-mode="vod"    onclick="switchMode('vod')">🎬 Movies</button>
+      <button class="mode-btn"        data-mode="series" onclick="switchMode('series')">📺 Series</button>
+    </div>
+
+    <!-- Category strip -->
+    <div id="catStrip">
+      <button class="cat-btn active" data-id="all" onclick="selectCat('all')">All</button>
+    </div>
+
+    <div id="chCount"></div>
+    <div id="channelList">
+      <div class="ch-empty">
+        <div class="icon">📺</div>
+        <div>No content loaded</div>
+        <div>Configure Settings then click Load</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Player -->
+  <div id="playerWrap">
+    <div id="videoArea">
+      <video id="player" controls playsinline></video>
+      <div id="overlay">
+        <div class="ov-icon">📺</div>
+        <div class="ov-text">Select something to watch</div>
+        <div class="ov-sub" id="overlayStatus"></div>
+      </div>
+    </div>
+
+    <!-- EPG bar -->
+    <div id="epgBar">
+      <div class="epg-chname" id="epgChName">—</div>
+      <div class="epg-slot">
+        <div class="epg-lbl">Now Playing</div>
+        <div class="epg-title" id="epgNowTitle">—</div>
+        <div class="epg-time"  id="epgNowTime"></div>
+      </div>
+      <div class="epg-prog">
+        <div class="prog-pct" id="epgPct"></div>
+        <div class="prog-track"><div class="prog-fill" id="epgFill" style="width:0%"></div></div>
+      </div>
+      <div class="epg-vdiv"></div>
+      <div class="epg-slot">
+        <div class="epg-lbl">Up Next</div>
+        <div class="epg-title" id="epgNextTitle">—</div>
+        <div class="epg-time"  id="epgNextTime"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Settings modal ──────────────────────────────────────────────────────── -->
+<div class="modal-bg" id="settingsModal" style="display:none" onclick="onModalBg(event)">
+  <div class="modal-box">
+    <div class="modal-title">⚙ Server Configuration</div>
+    <div class="field">
+      <label>Server URL</label>
+      <input type="text" id="cfgServer" placeholder="http://iptv-server.com:8080" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="cfgUser" placeholder="your_username" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="cfgPass" placeholder="your_password" autocomplete="current-password">
+      <div class="field-note">🔒 Password is saved for this browser session only, cleared when you close the tab.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="hideSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save &amp; Load</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Series info modal ────────────────────────────────────────────────────── -->
+<div class="modal-bg" id="seriesModal" style="display:none" onclick="onSeriesModalBg(event)">
+  <div class="modal-box" style="position:relative">
+    <button class="ser-modal-close" onclick="hideSeriesModal()">✕</button>
+    <div class="ser-modal-header">
+      <img class="ser-modal-cover" id="serCover" src="" alt=""
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="ser-modal-cover-fb" id="serCoverFb" style="display:none">🎬</div>
+      <div class="ser-modal-meta">
+        <div class="ser-modal-title"  id="serTitle"></div>
+        <div class="ser-modal-genre"  id="serGenre"></div>
+        <div class="ser-modal-rating" id="serRating"></div>
+        <div class="ser-modal-plot"   id="serPlot"></div>
+      </div>
+    </div>
+    <div class="season-tabs" id="seasonTabs"></div>
+    <div class="episode-list" id="episodeList"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ── App ─────────────────────────────────────────────────────────────────── -->
+<script>
+'use strict';
+
+// ─── State ────────────────────────────────────────────────────────────────────
+const S = {
+  cfg:      loadCfg(),
+  password: sessionStorage.getItem('iptv_pass') || '',
+  mode:     'live',   // 'live' | 'vod' | 'series'
+  activeCat: 'all',
+  query:    '',
+  currentCh: null,
+
+  // Per-mode caches
+  live:   { cats: [], items: [], loaded: false },
+  vod:    { cats: [], items: [], loaded: false },
+  series: { cats: [], items: [], loaded: false },
+
+  // Series detail
+  seriesInfo: null,
+  activeSeason: null,
+
+  hls:      null,
+  epgTimer: null,
+};
+
+function modeData() { return S[S.mode]; }
+
+// ─── Config ───────────────────────────────────────────────────────────────────
+function loadCfg() {
+  try { return JSON.parse(localStorage.getItem('iptv_cfg') || '{}'); }
+  catch { return {}; }
+}
+function saveCfg() {
+  localStorage.setItem('iptv_cfg', JSON.stringify({
+    server:   S.cfg.server   || '',
+    username: S.cfg.username || '',
+  }));
+}
+
+// ─── Proxy ────────────────────────────────────────────────────────────────────
+function px(url) {
+  if (window.location.protocol === 'file:') return url;
+  return '/proxy?url=' + encodeURIComponent(url);
+}
+
+// ─── Xtream API ───────────────────────────────────────────────────────────────
+async function xtream(action, params = {}) {
+  const { server, username } = S.cfg;
+  if (!server || !username || !S.password) throw new Error('Not configured — click Settings');
+  const base = server.replace(/\/+$/, '');
+  const qs   = new URLSearchParams({ username, password: S.password, action, ...params });
+  const r    = await fetch(px(`${base}/player_api.php?${qs}`));
+  if (!r.ok) throw new Error(`Server returned HTTP ${r.status}`);
+  return r.json();
+}
+
+// ─── Mode switching ───────────────────────────────────────────────────────────
+function switchMode(mode) {
+  S.mode = mode;
+  S.activeCat = 'all';
+  S.query = '';
+  id('searchInput').value = '';
+  document.querySelectorAll('.mode-btn').forEach(b =>
+    b.classList.toggle('active', b.getAttribute('data-mode') === mode));
+  loadCurrent();
+}
+
+async function loadCurrent() {
+  if (!S.cfg.server || !S.cfg.username || !S.password) { showSettings(); return; }
+  const data = modeData();
+  if (data.loaded) { renderCats(); applyFilter(); return; }
+
+  const btn = id('loadBtn');
+  btn.disabled = true; btn.textContent = 'Loading…';
+  setList('<div class="loading-row"><div class="spinner"></div>Loading…</div>');
+
+  try {
+    if (S.mode === 'live')   await loadLive();
+    if (S.mode === 'vod')    await loadVOD();
+    if (S.mode === 'series') await loadSeries();
+    data.loaded = true;
+    renderCats();
+    applyFilter();
+    const label = S.mode === 'live' ? 'channels' : S.mode === 'vod' ? 'movies' : 'series';
+    toast(`Loaded ${data.items.length.toLocaleString()} ${label}`, 'ok');
+  } catch (e) {
+    toast(e.message, 'err');
+    setList(`<div class="ch-empty"><div class="icon">⚠</div><div>${esc(e.message)}</div></div>`);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Reload';
+  }
+}
+
+async function loadLive() {
+  const [cats, items] = await Promise.all([
+    xtream('get_live_categories'),
+    xtream('get_live_streams'),
+  ]);
+  S.live.cats  = Array.isArray(cats)  ? cats  : [];
+  S.live.items = Array.isArray(items) ? items : [];
+}
+
+async function loadVOD() {
+  const [cats, items] = await Promise.all([
+    xtream('get_vod_categories'),
+    xtream('get_vod_streams'),
+  ]);
+  S.vod.cats  = Array.isArray(cats)  ? cats  : [];
+  S.vod.items = Array.isArray(items) ? items : [];
+}
+
+async function loadSeries() {
+  const [cats, items] = await Promise.all([
+    xtream('get_series_categories'),
+    xtream('get_series'),
+  ]);
+  S.series.cats  = Array.isArray(cats)  ? cats  : [];
+  S.series.items = Array.isArray(items) ? items : [];
+}
+
+// ─── Categories ──────────────────────────────────────────────────────────────
+function renderCats() {
+  const strip = id('catStrip');
+  strip.innerHTML = '';
+  strip.appendChild(makeCatBtn('All', 'all'));
+  modeData().cats.forEach(c => strip.appendChild(makeCatBtn(c.category_name, c.category_id)));
+}
+function makeCatBtn(label, catId) {
+  const el = document.createElement('button');
+  el.className = 'cat-btn' + (S.activeCat === String(catId) ? ' active' : '');
+  el.setAttribute('data-id', catId);
+  el.textContent = label;
+  el.onclick = () => selectCat(catId);
+  return el;
+}
+function selectCat(catId) {
+  S.activeCat = String(catId);
+  document.querySelectorAll('.cat-btn').forEach(el =>
+    el.classList.toggle('active', el.getAttribute('data-id') === S.activeCat));
+  applyFilter();
+}
+
+// ─── Filter ───────────────────────────────────────────────────────────────────
+function onSearch() {
+  S.query = id('searchInput').value.trim().toLowerCase();
+  applyFilter();
+}
+function applyFilter() {
+  let list = modeData().items;
+  if (S.activeCat !== 'all') list = list.filter(c => String(c.category_id) === S.activeCat);
+  if (S.query) {
+    const q = S.query;
+    list = list.filter(c => (c.name || c.title || '').toLowerCase().includes(q));
+  }
+  renderItems(list);
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function renderItems(items) {
+  id('chCount').textContent = items.length ? `${items.length.toLocaleString()} items` : '';
+  if (!items.length) {
+    setList('<div class="ch-empty"><div class="icon">🔍</div><div>No results</div></div>');
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  if (S.mode === 'live')   items.forEach(c => frag.appendChild(makeLiveEl(c)));
+  if (S.mode === 'vod')    items.forEach(c => frag.appendChild(makeVodEl(c)));
+  if (S.mode === 'series') items.forEach(c => frag.appendChild(makeSerEl(c)));
+  const list = id('channelList');
+  list.innerHTML = '';
+  list.appendChild(frag);
+}
+
+function makeLiveEl(ch) {
+  const isActive = S.currentCh?.stream_id === ch.stream_id && S.mode === 'live';
+  const el = document.createElement('div');
+  el.className = 'ch-item' + (isActive ? ' active' : '');
+  el.setAttribute('data-sid', ch.stream_id);
+  const logoHtml = ch.stream_icon ? `<img class="ch-logo" src="${esc(ch.stream_icon)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
+  const fbStyle  = ch.stream_icon ? 'style="display:none"' : '';
+  el.innerHTML = `
+    <span class="ch-num">${esc(String(ch.num || ''))}</span>
+    ${logoHtml}
+    <div class="ch-fb" ${fbStyle}>📺</div>
+    <div class="ch-info">
+      <div class="ch-name">${esc(ch.name)}</div>
+      <div class="ch-prog" id="cprog-${ch.stream_id}">—</div>
+    </div>
+    ${isActive ? '<div class="live-dot"></div>' : ''}
+  `;
+  el.onclick = () => playLive(ch);
+  return el;
+}
+
+function makeVodEl(m) {
+  const isActive = S.currentCh?.stream_id === m.stream_id && S.mode === 'vod';
+  const el = document.createElement('div');
+  el.className = 'vod-item' + (isActive ? ' active' : '');
+  el.setAttribute('data-sid', m.stream_id);
+  const posterHtml = m.stream_icon ? `<img class="vod-poster" src="${esc(m.stream_icon)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
+  const fbStyle    = m.stream_icon ? 'style="display:none"' : '';
+  const year    = m.year || (m.added ? new Date(m.added * 1000).getFullYear() : '');
+  const rating  = m.rating ? `<span class="vod-rating">★ ${parseFloat(m.rating).toFixed(1)}</span>` : '';
+  el.innerHTML = `
+    ${posterHtml}
+    <div class="vod-poster-fb" ${fbStyle}>🎬</div>
+    <div class="vod-info">
+      <div class="vod-title">${esc(m.name)}</div>
+      <div class="vod-meta">${year ? `<span>${year}</span>` : ''}${rating}</div>
+    </div>
+  `;
+  el.onclick = () => playVOD(m);
+  return el;
+}
+
+function makeSerEl(s) {
+  const el = document.createElement('div');
+  el.className = 'ser-item';
+  el.setAttribute('data-sid', s.series_id);
+  const coverHtml = s.cover ? `<img class="ser-poster" src="${esc(s.cover)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
+  const fbStyle   = s.cover ? 'style="display:none"' : '';
+  const rating    = s.rating ? `★ ${parseFloat(s.rating).toFixed(1)}` : '';
+  el.innerHTML = `
+    ${coverHtml}
+    <div class="ser-poster-fb" ${fbStyle}>🎭</div>
+    <div class="ser-info">
+      <div class="ser-title">${esc(s.name)}</div>
+      <div class="ser-meta">${esc(s.genre || '')}${rating ? ' · ' + rating : ''}</div>
+    </div>
+    <span class="ser-arrow">›</span>
+  `;
+  el.onclick = () => openSeries(s);
+  return el;
+}
+
+function setList(html) {
+  id('channelList').innerHTML = html;
+  id('chCount').textContent   = '';
+}
+
+// ─── Play Live ────────────────────────────────────────────────────────────────
+function playLive(ch) {
+  S.currentCh = ch;
+  document.querySelectorAll('.ch-item').forEach(el => {
+    const active = el.getAttribute('data-sid') === String(ch.stream_id);
+    el.classList.toggle('active', active);
+    const dot = el.querySelector('.live-dot');
+    if (active && !dot) el.insertAdjacentHTML('beforeend', '<div class="live-dot"></div>');
+    if (!active && dot) dot.remove();
+  });
+  const activeEl = document.querySelector('.ch-item.active');
+  if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
+
+  id('overlayStatus').textContent = 'Connecting…';
+  id('overlay').style.display = 'flex';
+
+  const { server, username } = S.cfg;
+  const base = server.replace(/\/+$/, '');
+  const streamUrl = ch.direct_source && /^https?:\/\//.test(ch.direct_source)
+    ? ch.direct_source
+    : `${base}/live/${username}/${S.password}/${ch.stream_id}.m3u8`;
+
+  hlsPlay(px(streamUrl));
+  updateEPGChannel(ch.name);
+  clearTimeout(S.epgTimer);
+  fetchEPG(ch.stream_id);
+}
+
+// ─── Play VOD ─────────────────────────────────────────────────────────────────
+function playVOD(m) {
+  S.currentCh = m;
+  document.querySelectorAll('.vod-item').forEach(el =>
+    el.classList.toggle('active', el.getAttribute('data-sid') === String(m.stream_id)));
+  const activeEl = document.querySelector('.vod-item.active');
+  if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
+
+  id('overlayStatus').textContent = 'Loading…';
+  id('overlay').style.display = 'flex';
+
+  const { server, username } = S.cfg;
+  const base = server.replace(/\/+$/, '');
+  const ext  = m.container_extension || 'mp4';
+  const url  = `${base}/movie/${username}/${S.password}/${m.stream_id}.${ext}`;
+
+  updateEPGChannel(m.name);
+  clearEPGBar();
+  id('epgNowTitle').textContent = m.plot ? m.plot.substring(0, 80) + (m.plot.length > 80 ? '…' : '') : '—';
+
+  if (ext === 'm3u8') {
+    hlsPlay(px(url));
+  } else {
+    // Direct play for mp4/mkv etc
+    const video = id('player');
+    if (S.hls) { S.hls.destroy(); S.hls = null; }
+    video.src = px(url);
+    video.play().catch(() => {});
+    video.addEventListener('playing', () => { id('overlay').style.display = 'none'; }, { once: true });
+  }
+}
+
+// ─── Series browser ───────────────────────────────────────────────────────────
+async function openSeries(s) {
+  id('serTitle').textContent  = s.name || '';
+  id('serGenre').textContent  = s.genre || '';
+  id('serRating').textContent = s.rating ? `★ ${parseFloat(s.rating).toFixed(1)} / 10` : '';
+  id('serPlot').textContent   = s.plot || '';
+
+  // Cover image
+  const img = id('serCover');
+  const fb  = id('serCoverFb');
+  if (s.cover) {
+    img.src = s.cover;
+    img.style.display = '';
+    fb.style.display  = 'none';
+  } else {
+    img.style.display = 'none';
+    fb.style.display  = 'flex';
+  }
+
+  id('seasonTabs').innerHTML   = '';
+  id('episodeList').innerHTML  = '<div class="ser-loading"><div class="spinner"></div>Loading episodes…</div>';
+  id('seriesModal').style.display = 'flex';
+
+  try {
+    const data = await xtream('get_series_info', { series_id: s.series_id });
+    S.seriesInfo = data;
+    renderSeasons(data.episodes || {});
+  } catch (e) {
+    id('episodeList').innerHTML = `<div class="ser-loading">⚠ ${esc(e.message)}</div>`;
+  }
+}
+
+function renderSeasons(episodes) {
+  const seasons = Object.keys(episodes).sort((a, b) => Number(a) - Number(b));
+  if (!seasons.length) {
+    id('episodeList').innerHTML = '<div class="ser-loading">No episodes found</div>';
+    return;
+  }
+  const tabs = id('seasonTabs');
+  tabs.innerHTML = '';
+  seasons.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'season-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = `Season ${s}`;
+    btn.onclick = () => {
+      document.querySelectorAll('.season-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderEpisodes(episodes[s]);
+    };
+    tabs.appendChild(btn);
+  });
+  renderEpisodes(episodes[seasons[0]]);
+}
+
+function renderEpisodes(eps) {
+  if (!eps || !eps.length) {
+    id('episodeList').innerHTML = '<div class="ser-loading">No episodes in this season</div>';
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  eps.forEach(ep => {
+    const el = document.createElement('div');
+    el.className = 'ep-item';
+    const thumbHtml = ep.info?.movie_image
+      ? `<img class="ep-thumb" src="${esc(ep.info.movie_image)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      : '';
+    const fbStyle = ep.info?.movie_image ? 'style="display:none"' : '';
+    const dur = ep.info?.duration || '';
+    el.innerHTML = `
+      <span class="ep-num">${esc(String(ep.episode_num || ''))}</span>
+      ${thumbHtml}
+      <div class="ep-thumb-fb" ${fbStyle}>▶</div>
+      <div class="ep-info">
+        <div class="ep-title">${esc(ep.title || `Episode ${ep.episode_num}`)}</div>
+        ${dur ? `<div class="ep-dur">${esc(dur)}</div>` : ''}
+      </div>
+      <button class="ep-play" title="Play">▶</button>
+    `;
+    const playBtn = el.querySelector('.ep-play');
+    playBtn.onclick = (e) => { e.stopPropagation(); playEpisode(ep); };
+    el.onclick = () => playEpisode(ep);
+    frag.appendChild(el);
+  });
+  id('episodeList').innerHTML = '';
+  id('episodeList').appendChild(frag);
+}
+
+function playEpisode(ep) {
+  hideSeriesModal();
+  const { server, username } = S.cfg;
+  const base = server.replace(/\/+$/, '');
+  const ext  = ep.container_extension || 'mp4';
+  const url  = `${base}/series/${username}/${S.password}/${ep.id}.${ext}`;
+
+  S.currentCh = ep;
+  id('overlayStatus').textContent = 'Loading…';
+  id('overlay').style.display = 'flex';
+
+  updateEPGChannel(S.seriesInfo?.info?.name || 'Series');
+  clearEPGBar();
+  id('epgNowTitle').textContent = ep.title || `Episode ${ep.episode_num}`;
+
+  if (ext === 'm3u8') {
+    hlsPlay(px(url));
+  } else {
+    const video = id('player');
+    if (S.hls) { S.hls.destroy(); S.hls = null; }
+    video.src = px(url);
+    video.play().catch(() => {});
+    video.addEventListener('playing', () => { id('overlay').style.display = 'none'; }, { once: true });
+  }
+}
+
+function hideSeriesModal() { id('seriesModal').style.display = 'none'; }
+function onSeriesModalBg(e) { if (e.target === id('seriesModal')) hideSeriesModal(); }
+
+// ─── HLS ──────────────────────────────────────────────────────────────────────
+function hlsPlay(url) {
+  const video = id('player');
+  if (S.hls) { S.hls.destroy(); S.hls = null; }
+
+  video.addEventListener('playing', () => { id('overlay').style.display = 'none'; }, { once: true });
+
+  if (Hls.isSupported()) {
+    const hls = new Hls({ enableWorker: true });
+    S.hls = hls;
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+    hls.on(Hls.Events.ERROR, (_, d) => {
+      if (!d.fatal) return;
+      if      (d.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+      else if (d.type === Hls.ErrorTypes.MEDIA_ERROR)   hls.recoverMediaError();
+      else { hls.destroy(); S.hls = null; video.src = url; video.play().catch(() => {}); }
+    });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = url; video.play().catch(() => {});
+  } else {
+    toast('HLS not supported in this browser', 'err');
+  }
+}
+
+// ─── EPG ──────────────────────────────────────────────────────────────────────
+async function fetchEPG(streamId) {
+  try {
+    const data     = await xtream('get_short_epg', { stream_id: streamId, limit: 2 });
+    const listings = data?.epg_listings || [];
+    updateEPGBar(listings, streamId);
+    S.epgTimer = setTimeout(() => {
+      if (S.currentCh?.stream_id === streamId && S.mode === 'live') fetchEPG(streamId);
+    }, 60_000);
+  } catch { /* EPG is optional */ }
+}
+
+function updateEPGBar(listings, streamId) {
+  if (!listings.length) return;
+  const now  = Date.now() / 1000;
+  const cur  = listings[0];
+  const nxt  = listings[1];
+  const start = Number(cur.start_timestamp);
+  const stop  = Number(cur.stop_timestamp);
+  const pct   = Math.max(0, Math.min(100, (now - start) / (stop - start) * 100));
+  const title = b64dec(cur.title);
+
+  id('epgNowTitle').textContent = title;
+  id('epgNowTime').textContent  = `${fmtTs(start)} – ${fmtTs(stop)}`;
+  id('epgFill').style.width     = pct.toFixed(1) + '%';
+  id('epgPct').textContent      = Math.round(pct) + '% complete';
+  if (nxt) {
+    id('epgNextTitle').textContent = b64dec(nxt.title);
+    id('epgNextTime').textContent  = `${fmtTs(Number(nxt.start_timestamp))} – ${fmtTs(Number(nxt.stop_timestamp))}`;
+  }
+  const progEl = document.getElementById(`cprog-${streamId}`);
+  if (progEl) progEl.textContent = title;
+}
+
+function updateEPGChannel(name) { id('epgChName').textContent = name; }
+function clearEPGBar() {
+  ['epgNowTitle','epgNowTime','epgNextTitle','epgNextTime'].forEach(i => id(i).textContent = '—');
+  id('epgFill').style.width = '0%';
+  id('epgPct').textContent  = '';
+}
+
+function b64dec(str) { if (!str) return '—'; try { return atob(str) || str; } catch { return str; } }
+function fmtTs(ts)   { return new Date(ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
+function showSettings() {
+  id('cfgServer').value = S.cfg.server   || '';
+  id('cfgUser').value   = S.cfg.username || '';
+  id('cfgPass').value   = S.password     || '';
+  id('settingsModal').style.display = 'flex';
+  setTimeout(() => id('cfgServer').focus(), 40);
+}
+function hideSettings() { id('settingsModal').style.display = 'none'; }
+function onModalBg(e)   { if (e.target === id('settingsModal')) hideSettings(); }
+function saveSettings() {
+  const server   = id('cfgServer').value.trim();
+  const username = id('cfgUser').value.trim();
+  const password = id('cfgPass').value;
+  if (!server || !username || !password) { toast('Fill in all three fields', 'err'); return; }
+  // Invalidate caches when server changes
+  if (server !== S.cfg.server || username !== S.cfg.username) {
+    S.live.loaded = S.vod.loaded = S.series.loaded = false;
+  }
+  S.cfg.server   = server;
+  S.cfg.username = username;
+  S.password     = password;
+  sessionStorage.setItem('iptv_pass', password);
+  saveCfg();
+  hideSettings();
+  loadCurrent();
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+let toastTmr;
+function toast(msg, type = '') {
+  const el = id('toast');
+  el.textContent = msg;
+  el.className = 'show' + (type ? ' ' + type : '');
+  clearTimeout(toastTmr);
+  toastTmr = setTimeout(() => { el.className = ''; }, 3500);
+}
+
+// ─── Utils ────────────────────────────────────────────────────────────────────
+function id(s) { return document.getElementById(s); }
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { hideSettings(); hideSeriesModal(); }
+});
+if (S.cfg.server && S.cfg.username) {
+  try { id('overlayStatus').textContent = `${S.cfg.username} @ ${new URL(S.cfg.server).hostname}`; } catch {}
+  // Auto-load if session password is still available
+  if (S.password) loadCurrent();
+}
+</script>
+</body>
+</html>

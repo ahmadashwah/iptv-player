@@ -1,0 +1,12 @@
+{
+  "name": "iptv-player",
+  "version": "1.0.0",
+  "description": "Web-based IPTV player with Xtream Codes API and HLS playback",
+  "main": "iptv-proxy.js",
+  "scripts": {
+    "start": "node iptv-proxy.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
