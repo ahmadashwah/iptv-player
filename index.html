@@ -805,16 +805,17 @@ function playVOD(m) {
   const { server, username } = S.cfg;
   const base = server.replace(/\/+$/, '');
   const ext  = m.container_extension || 'mp4';
-  const url = `${base}/movie/${username}/${S.password}/${m.stream_id}.${ext}`;
+  // Use HTTPS + direct (no proxy) so request comes from user's IP, not Railway's
+  const url = `${httpsBase(base)}/movie/${username}/${S.password}/${m.stream_id}.${ext}`;
 
   updateEPGChannel(m.name);
   clearEPGBar();
   id('epgNowTitle').textContent = m.plot ? m.plot.substring(0, 80) + (m.plot.length > 80 ? '…' : '') : '—';
 
   if (ext === 'm3u8') {
-    hlsPlay(px(url));
+    hlsPlay(url);  // direct, no proxy
   } else {
-    playDirect(px(url));
+    playDirect(url);  // direct, no proxy
   }
 }
 
@@ -910,7 +911,8 @@ function playEpisode(ep) {
   const { server, username } = S.cfg;
   const base = server.replace(/\/+$/, '');
   const ext  = ep.container_extension || 'mp4';
-  const url  = `${base}/series/${username}/${S.password}/${ep.id}.${ext}`;
+  // Direct HTTPS — bypass proxy so request uses user's IP, not Railway's
+  const url  = `${httpsBase(base)}/series/${username}/${S.password}/${ep.id}.${ext}`;
 
   S.currentCh = ep;
   id('overlayStatus').textContent = 'Loading…';
@@ -920,10 +922,10 @@ function playEpisode(ep) {
   clearEPGBar();
   id('epgNowTitle').textContent = ep.title || `Episode ${ep.episode_num}`;
 
-  if ((ep.container_extension || 'mp4') === 'm3u8') {
-    hlsPlay(px(url));
+  if (ext === 'm3u8') {
+    hlsPlay(url);  // direct, no proxy
   } else {
-    playDirect(px(url));
+    playDirect(url);  // direct, no proxy
   }
 }
 
@@ -1065,6 +1067,8 @@ function toast(msg, type = '') {
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 function id(s) { return document.getElementById(s); }
+// Force HTTPS on the base URL so VOD streams work from HTTPS pages (no mixed content)
+function httpsBase(base) { return base.replace(/^http:\/\//i, 'https://'); }
 function esc(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
