@@ -824,17 +824,19 @@ function playVOD(m) {
   const { server, username } = S.cfg;
   const base = server.replace(/\/+$/, '');
   const ext  = m.container_extension || 'mp4';
-  // Use HTTPS + direct (no proxy) so request comes from user's IP, not Railway's
-  const url = `${httpsBase(base)}/movie/${username}/${S.password}/${m.stream_id}.${ext}`;
+  // Build the raw HTTP URL then route through Railway proxy on HTTPS pages
+  // (the IPTV server doesn't support HTTPS for movie files, so direct HTTPS fails)
+  const rawUrl = `${base}/movie/${username}/${S.password}/${m.stream_id}.${ext}`;
+  const url = window.location.protocol === 'https:' ? px(rawUrl) : rawUrl;
 
   updateEPGChannel(m.name);
   clearEPGBar();
   id('epgNowTitle').textContent = m.plot ? m.plot.substring(0, 80) + (m.plot.length > 80 ? '…' : '') : '—';
 
   if (ext === 'm3u8') {
-    hlsPlay(url);  // direct, no proxy
+    hlsPlay(url);
   } else {
-    playDirect(url);  // direct, no proxy
+    playDirect(url);
   }
 }
 
@@ -930,8 +932,9 @@ function playEpisode(ep) {
   const { server, username } = S.cfg;
   const base = server.replace(/\/+$/, '');
   const ext  = ep.container_extension || 'mp4';
-  // Direct HTTPS — bypass proxy so request uses user's IP, not Railway's
-  const url  = `${httpsBase(base)}/series/${username}/${S.password}/${ep.id}.${ext}`;
+  // Route through Railway proxy on HTTPS (IPTV server doesn't serve series over HTTPS)
+  const rawUrl = `${base}/series/${username}/${S.password}/${ep.id}.${ext}`;
+  const url  = window.location.protocol === 'https:' ? px(rawUrl) : rawUrl;
 
   S.currentCh = ep;
   id('overlayStatus').textContent = 'Loading…';
@@ -942,9 +945,9 @@ function playEpisode(ep) {
   id('epgNowTitle').textContent = ep.title || `Episode ${ep.episode_num}`;
 
   if (ext === 'm3u8') {
-    hlsPlay(url);  // direct, no proxy
+    hlsPlay(url);
   } else {
-    playDirect(url);  // direct, no proxy
+    playDirect(url);
   }
 }
 
