@@ -781,14 +781,13 @@ function playLive(ch) {
 
   const { server, username } = S.cfg;
   const base = server.replace(/\/+$/, '');
-  const rawUrl = ch.direct_source && /^https?:\/\//.test(ch.direct_source)
+  const streamUrl = ch.direct_source && /^https?:\/\//.test(ch.direct_source)
     ? ch.direct_source
     : `${base}/live/${username}/${S.password}/${ch.stream_id}.m3u8`;
 
-  // On HTTPS (Railway): force HTTPS on the stream URL so the browser's fetch()
-  // inside the custom loader isn't blocked by mixed-content policy.
-  // On HTTP (local dev): route through proxy as before.
-  const streamUrl = window.location.protocol === 'https:' ? httpsBase(rawUrl) : rawUrl;
+  // On HTTPS (Railway): custom loader wraps the URL in allorigins.win (HTTPS),
+  // so the stream URL can stay HTTP — allorigins.win fetches it server-side.
+  // On HTTP (local dev): route through Railway proxy as before.
   const hlsUrl = window.location.protocol === 'https:' ? streamUrl : px(streamUrl);
   hlsPlay(hlsUrl);
   updateEPGChannel(ch.name);
