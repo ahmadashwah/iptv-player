@@ -785,7 +785,10 @@ function playLive(ch) {
     ? ch.direct_source
     : `${base}/live/${username}/${S.password}/${ch.stream_id}.m3u8`;
 
-  hlsPlay(px(streamUrl));
+  // On HTTPS (Railway): custom loader fetches manifest directly from user's IP.
+  // On HTTP (local dev): route through proxy as before.
+  const hlsUrl = window.location.protocol === 'https:' ? streamUrl : px(streamUrl);
+  hlsPlay(hlsUrl);
   updateEPGChannel(ch.name);
   clearTimeout(S.epgTimer);
   fetchEPG(ch.stream_id);
@@ -946,6 +949,69 @@ function playDirect(url) {
   }, { once: true });
 }
 
+// ─── Custom HLS loader (live TV on HTTPS/Railway) ────────────────────────────
+// When running on HTTPS (Railway), cf.turbostech.com blocks live stream requests
+// from Railway's datacenter IP with an empty 200 response. Fix: fetch m3u8
+// manifests directly from the user's browser (their residential IP), then
+// rewrite any HTTP segment URLs to go through our Railway proxy, which CAN
+// reach the backend segment servers (185.245.1.196 etc).
+function createDirectLoader() {
+  const DefaultLoader = Hls.DefaultConfig.loader;
+  return class DirectLoader extends DefaultLoader {
+    load(context, config, callbacks) {
+      const isManifest = context.type === 'manifest' || context.type === 'level';
+      if (isManifest && window.location.protocol === 'https:') {
+        const abortCtrl = new AbortController();
+        this._ctrl = abortCtrl;
+        const reqUrl = context.url;
+        fetch(reqUrl, { signal: abortCtrl.signal })
+          .then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.text();
+          })
+          .then(text => {
+            // Rewrite segment URLs: http→/proxy?url=... (https segments pass through as-is)
+            let base;
+            try { base = new URL(reqUrl); } catch { base = null; }
+            const rewritten = text.split('\n').map(line => {
+              const t = line.trim();
+              // Rewrite EXT-X-KEY URI
+              if (t.startsWith('#EXT-X-KEY') && t.includes('URI=')) {
+                return line.replace(/URI="([^"]+)"/g, (_, uri) => {
+                  try {
+                    const abs = uri.startsWith('http') ? uri : (base ? new URL(uri, base).toString() : uri);
+                    if (abs.startsWith('http:')) return `URI="${'/proxy?url=' + encodeURIComponent(abs)}"`;
+                    return `URI="${abs}"`;
+                  } catch { return `URI="${uri}"`; }
+                });
+              }
+              if (!t || t.startsWith('#')) return line;
+              // Segment URLs
+              try {
+                const abs = t.startsWith('http') ? t : (base ? new URL(t, base).toString() : t);
+                if (abs.startsWith('http:')) return '/proxy?url=' + encodeURIComponent(abs);
+                return abs; // https segments: browser fetches directly
+              } catch { return line; }
+            }).join('\n');
+            const now = performance.now();
+            callbacks.onSuccess(
+              { data: rewritten, url: reqUrl },
+              { trequest: now - 10, tfirst: now - 5, tload: now, loaded: rewritten.length, total: rewritten.length },
+              context, null
+            );
+          })
+          .catch(e => {
+            if (e.name === 'AbortError') return;
+            callbacks.onError({ code: 0, text: e.message }, context, null, null);
+          });
+      } else {
+        super.load(context, config, callbacks);
+      }
+    }
+    abort() { if (this._ctrl) this._ctrl.abort(); try { super.abort(); } catch {} }
+  };
+}
+
 // ─── HLS ──────────────────────────────────────────────────────────────────────
 function hlsPlay(url, nativeFallback) {
   const video = id('player');
@@ -956,7 +1022,13 @@ function hlsPlay(url, nativeFallback) {
   const fallback = nativeFallback || url;
 
   if (Hls.isSupported()) {
-    const hls = new Hls({ enableWorker: true });
+    const hlsCfg = { enableWorker: true };
+    // For live TV on HTTPS, use direct-fetch loader so manifest comes from
+    // user's IP (not Railway's blocked IP)
+    if (S.mode === 'live' && window.location.protocol === 'https:') {
+      hlsCfg.loader = createDirectLoader();
+    }
+    const hls = new Hls(hlsCfg);
     S.hls = hls;
     hls.loadSource(url);
     hls.attachMedia(video);
@@ -975,7 +1047,7 @@ function hlsPlay(url, nativeFallback) {
       }
     });
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-    // Safari native HLS
+    // Safari native HLS — fetch directly (user's IP)
     video.src = url; video.play().catch(() => {});
   } else {
     // Last resort: native video element (mp4)
