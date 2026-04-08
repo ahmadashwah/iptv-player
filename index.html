@@ -585,9 +585,12 @@ async function refreshTunnelUrl() {
 }
 
 // ─── Proxy ────────────────────────────────────────────────────────────────────
+// All requests route through the Pi tunnel (S.cfg.liveProxy).
+// Falls back to a relative /proxy path for local dev or if tunnel not yet loaded.
 function px(url) {
   if (window.location.protocol === 'file:') return url;
-  return '/proxy?url=' + encodeURIComponent(url);
+  if (S.cfg?.liveProxy) return `${S.cfg.liveProxy}/proxy?url=${encodeURIComponent(url)}`;
+  return '/proxy?url=' + encodeURIComponent(url); // local dev / Railway fallback
 }
 
 // ─── Xtream API ───────────────────────────────────────────────────────────────
@@ -1265,6 +1268,8 @@ function esc(s) {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { hideSettings(); hideSeriesModal(); }
 });
+// Warm up the Pi tunnel URL as early as possible (runs in background, no await)
+refreshTunnelUrl();
 if (S.cfg.server && S.cfg.username) {
   try { id('overlayStatus').textContent = `${S.cfg.username} @ ${new URL(S.cfg.server).hostname}`; } catch {}
   // Auto-load if session password is still available
