@@ -1011,10 +1011,19 @@ function createDirectLoader() {
         const abortCtrl = new AbortController();
         this._ctrl = abortCtrl;
         const reqUrl = context.url;
-        // Strip any previous allorigins.win wrapping to get the real URL
-        const realUrl = reqUrl.startsWith('https://api.allorigins.win')
-          ? decodeURIComponent(new URL(reqUrl).searchParams.get('url') || reqUrl).replace(/[&?]_t=\d+$/, '')
-          : reqUrl;
+        // Strip any proxy wrapping to get the real IPTV URL.
+        // hls.js reuses the response url for manifest refreshes, so we may
+        // receive an already-wrapped URL on the 2nd+ call — unwrap it.
+        const lp = (typeof S !== 'undefined' && S.cfg?.liveProxy) || '';
+        const realUrl = (() => {
+          try {
+            if (reqUrl.startsWith('https://api.allorigins.win') || (lp && reqUrl.startsWith(lp))) {
+              const inner = new URL(reqUrl).searchParams.get('url');
+              return inner ? decodeURIComponent(inner) : reqUrl;
+            }
+          } catch {}
+          return reqUrl;
+        })();
 
         const proxyUrl = liveProxyWrap(realUrl, true);
         // The proxy base URL (tunnel or allorigins) — used to absolutize relative segment paths
@@ -1056,7 +1065,9 @@ function createDirectLoader() {
               parsing: { start: now, end: now },
               buffering: { start: now, first: now, end: now },
             };
-            callbacks.onSuccess({ data: rewritten, url: proxyUrl }, stats, context, null);
+            // Pass realUrl so hls.js stores the clean IPTV URL for future refreshes,
+            // not the proxy URL (which would get double-wrapped on the next call).
+            callbacks.onSuccess({ data: rewritten, url: realUrl }, stats, context, null);
           })
           .catch(e => {
             if (e.name === 'AbortError') return;
