@@ -781,12 +781,14 @@ function playLive(ch) {
 
   const { server, username } = S.cfg;
   const base = server.replace(/\/+$/, '');
-  const streamUrl = ch.direct_source && /^https?:\/\//.test(ch.direct_source)
+  const rawUrl = ch.direct_source && /^https?:\/\//.test(ch.direct_source)
     ? ch.direct_source
     : `${base}/live/${username}/${S.password}/${ch.stream_id}.m3u8`;
 
-  // On HTTPS (Railway): custom loader fetches manifest directly from user's IP.
+  // On HTTPS (Railway): force HTTPS on the stream URL so the browser's fetch()
+  // inside the custom loader isn't blocked by mixed-content policy.
   // On HTTP (local dev): route through proxy as before.
+  const streamUrl = window.location.protocol === 'https:' ? httpsBase(rawUrl) : rawUrl;
   const hlsUrl = window.location.protocol === 'https:' ? streamUrl : px(streamUrl);
   hlsPlay(hlsUrl);
   updateEPGChannel(ch.name);
@@ -1002,7 +1004,37 @@ function createDirectLoader() {
           })
           .catch(e => {
             if (e.name === 'AbortError') return;
-            callbacks.onError({ code: 0, text: e.message }, context, null, null);
+            // Direct fetch failed (CORS or network) — fall back to Railway proxy
+            const proxyUrl = '/proxy?url=' + encodeURIComponent(reqUrl);
+            fetch(proxyUrl, { signal: abortCtrl.signal })
+              .then(r => r.text())
+              .then(text => {
+                let base;
+                try { base = new URL(reqUrl); } catch { base = null; }
+                const rewritten = text.split('\n').map(line => {
+                  const t = line.trim();
+                  if (t.startsWith('#EXT-X-KEY') && t.includes('URI=')) {
+                    return line.replace(/URI="([^"]+)"/g, (_, uri) => {
+                      try {
+                        const abs = uri.startsWith('http') ? uri : (base ? new URL(uri, base).toString() : uri);
+                        return `URI="${'/proxy?url=' + encodeURIComponent(abs)}"`;
+                      } catch { return `URI="${uri}"`; }
+                    });
+                  }
+                  if (!t || t.startsWith('#')) return line;
+                  try {
+                    const abs = t.startsWith('http') ? t : (base ? new URL(t, base).toString() : t);
+                    return '/proxy?url=' + encodeURIComponent(abs);
+                  } catch { return line; }
+                }).join('\n');
+                const now = performance.now();
+                callbacks.onSuccess(
+                  { data: rewritten, url: reqUrl },
+                  { trequest: now - 10, tfirst: now - 5, tload: now, loaded: rewritten.length, total: rewritten.length },
+                  context, null
+                );
+              })
+              .catch(e2 => callbacks.onError({ code: 0, text: e2.message }, context, null, null));
           });
       } else {
         super.load(context, config, callbacks);
