@@ -952,11 +952,43 @@ function playDirect(url) {
 }
 
 // ─── Custom HLS loader (live TV on HTTPS/Railway) ────────────────────────────
-// When running on HTTPS (Railway), cf.turbostech.com blocks live stream requests
-// from Railway's datacenter IP with an empty 200 response. Fix: fetch m3u8
-// manifests directly from the user's browser (their residential IP), then
-// rewrite any HTTP segment URLs to go through our Railway proxy, which CAN
-// reach the backend segment servers (185.245.1.196 etc).
+// Problem: cf.turbostech.com blocks Railway's datacenter IP for live streams.
+// The segment URLs contain an IP-bound token — the server that fetches the
+// manifest must also fetch the segments (same IP = token valid).
+//
+// Solution: route EVERYTHING (manifest + segments) through api.allorigins.win,
+// a free CORS proxy that uses its own non-blocked IPs. Each manifest fetch
+// gets a fresh timestamp to bust allorigins.win's cache so live streams update.
+// On local HTTP dev, use the normal Railway proxy as before.
+
+function aoWrap(url) {
+  // Add timestamp so allorigins.win doesn't serve a stale cached manifest
+  const sep = url.includes('?') ? '&' : '?';
+  return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url + sep + '_t=' + Date.now());
+}
+
+function rewriteM3U8Lines(text, reqUrl) {
+  let base;
+  try { base = new URL(reqUrl); } catch { base = null; }
+  return text.split('\n').map(line => {
+    const t = line.trim();
+    if (t.startsWith('#EXT-X-KEY') && t.includes('URI=')) {
+      return line.replace(/URI="([^"]+)"/g, (_, uri) => {
+        try {
+          const abs = uri.startsWith('http') ? uri : (base ? new URL(uri, base).toString() : uri);
+          return `URI="${aoWrap(abs)}"`;
+        } catch { return `URI="${uri}"`; }
+      });
+    }
+    if (!t || t.startsWith('#')) return line;
+    try {
+      const abs = t.startsWith('http') ? t : (base ? new URL(t, base).toString() : t);
+      // Segments: route through allorigins.win (same IP as manifest = token valid)
+      return aoWrap(abs);
+    } catch { return line; }
+  }).join('\n');
+}
+
 function createDirectLoader() {
   const DefaultLoader = Hls.DefaultConfig.loader;
   return class DirectLoader extends DefaultLoader {
@@ -966,35 +998,19 @@ function createDirectLoader() {
         const abortCtrl = new AbortController();
         this._ctrl = abortCtrl;
         const reqUrl = context.url;
-        fetch(reqUrl, { signal: abortCtrl.signal })
+        // Strip any previous allorigins.win wrapping to get the real URL
+        const realUrl = reqUrl.startsWith('https://api.allorigins.win')
+          ? decodeURIComponent(new URL(reqUrl).searchParams.get('url') || reqUrl).replace(/[&?]_t=\d+$/, '')
+          : reqUrl;
+
+        fetch(aoWrap(realUrl), { signal: abortCtrl.signal })
           .then(r => {
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             return r.text();
           })
           .then(text => {
-            // Rewrite segment URLs: http→/proxy?url=... (https segments pass through as-is)
-            let base;
-            try { base = new URL(reqUrl); } catch { base = null; }
-            const rewritten = text.split('\n').map(line => {
-              const t = line.trim();
-              // Rewrite EXT-X-KEY URI
-              if (t.startsWith('#EXT-X-KEY') && t.includes('URI=')) {
-                return line.replace(/URI="([^"]+)"/g, (_, uri) => {
-                  try {
-                    const abs = uri.startsWith('http') ? uri : (base ? new URL(uri, base).toString() : uri);
-                    if (abs.startsWith('http:')) return `URI="${'/proxy?url=' + encodeURIComponent(abs)}"`;
-                    return `URI="${abs}"`;
-                  } catch { return `URI="${uri}"`; }
-                });
-              }
-              if (!t || t.startsWith('#')) return line;
-              // Segment URLs
-              try {
-                const abs = t.startsWith('http') ? t : (base ? new URL(t, base).toString() : t);
-                if (abs.startsWith('http:')) return '/proxy?url=' + encodeURIComponent(abs);
-                return abs; // https segments: browser fetches directly
-              } catch { return line; }
-            }).join('\n');
+            if (!text || !text.includes('#EXTM3U')) throw new Error('Empty or invalid manifest');
+            const rewritten = rewriteM3U8Lines(text, realUrl);
             const now = performance.now();
             callbacks.onSuccess(
               { data: rewritten, url: reqUrl },
@@ -1004,39 +1020,10 @@ function createDirectLoader() {
           })
           .catch(e => {
             if (e.name === 'AbortError') return;
-            // Direct fetch failed (CORS or network) — fall back to Railway proxy
-            const proxyUrl = '/proxy?url=' + encodeURIComponent(reqUrl);
-            fetch(proxyUrl, { signal: abortCtrl.signal })
-              .then(r => r.text())
-              .then(text => {
-                let base;
-                try { base = new URL(reqUrl); } catch { base = null; }
-                const rewritten = text.split('\n').map(line => {
-                  const t = line.trim();
-                  if (t.startsWith('#EXT-X-KEY') && t.includes('URI=')) {
-                    return line.replace(/URI="([^"]+)"/g, (_, uri) => {
-                      try {
-                        const abs = uri.startsWith('http') ? uri : (base ? new URL(uri, base).toString() : uri);
-                        return `URI="${'/proxy?url=' + encodeURIComponent(abs)}"`;
-                      } catch { return `URI="${uri}"`; }
-                    });
-                  }
-                  if (!t || t.startsWith('#')) return line;
-                  try {
-                    const abs = t.startsWith('http') ? t : (base ? new URL(t, base).toString() : t);
-                    return '/proxy?url=' + encodeURIComponent(abs);
-                  } catch { return line; }
-                }).join('\n');
-                const now = performance.now();
-                callbacks.onSuccess(
-                  { data: rewritten, url: reqUrl },
-                  { trequest: now - 10, tfirst: now - 5, tload: now, loaded: rewritten.length, total: rewritten.length },
-                  context, null
-                );
-              })
-              .catch(e2 => callbacks.onError({ code: 0, text: e2.message }, context, null, null));
+            callbacks.onError({ code: 0, text: e.message }, context, null, null);
           });
       } else {
+        // Local HTTP dev or non-manifest: use default loader (goes through Railway proxy)
         super.load(context, config, callbacks);
       }
     }
