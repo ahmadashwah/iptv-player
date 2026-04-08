@@ -494,9 +494,9 @@ video { width: 100%; height: 100%; display: block; background: #000; }
       <div class="field-note">🔒 Password is saved for this browser session only, cleared when you close the tab.</div>
     </div>
     <div class="field">
-      <label>Live TV Proxy <span style="color:var(--muted);font-weight:400">(optional — needed for hosted deployments)</span></label>
-      <input type="text" id="cfgProxy" placeholder="https://iptv-cors.YOUR-NAME.workers.dev" autocomplete="off">
-      <div class="field-note">📡 Deploy the free <strong>worker.js</strong> from the repo to Cloudflare Workers, paste the URL here to fix Live TV. <a href="https://github.com/ahmadashwah/iptv-player#live-tv-proxy" target="_blank" style="color:var(--accent)">Setup guide ↗</a></div>
+      <label>Raspberry Pi Tunnel <span style="color:var(--muted);font-weight:400">(auto-managed)</span></label>
+      <div id="piStatus" style="padding:8px 12px;border-radius:8px;background:var(--surface2);font-size:13px;color:var(--muted)">Checking…</div>
+      <div class="field-note">🍓 Your Pi proxy URL is fetched automatically on load. Keep the Pi powered on and connected to your home network.</div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="hideSettings()">Cancel</button>
@@ -568,6 +568,22 @@ function saveCfg() {
   }));
 }
 
+// ─── Auto-fetch Pi tunnel URL from Cloudflare Worker registry ─────────────────
+const TUNNEL_REGISTRY = 'https://iptv-tunnel.ahmadashwah.workers.dev/';
+
+async function refreshTunnelUrl() {
+  try {
+    const r = await fetch(TUNNEL_REGISTRY, { cache: 'no-store' });
+    if (!r.ok) return;
+    const { url } = await r.json();
+    if (url && url.startsWith('https://') && url !== S.cfg.liveProxy) {
+      S.cfg.liveProxy = url;
+      saveCfg();
+      console.log('[tunnel] Updated proxy URL:', url);
+    }
+  } catch { /* offline or Pi not running — keep last known URL */ }
+}
+
 // ─── Proxy ────────────────────────────────────────────────────────────────────
 function px(url) {
   if (window.location.protocol === 'file:') return url;
@@ -597,6 +613,7 @@ function switchMode(mode) {
 }
 
 async function loadCurrent() {
+  await refreshTunnelUrl();   // silently pull latest Pi tunnel URL before doing anything
   if (!S.cfg.server || !S.cfg.username || !S.password) { showSettings(); return; }
   const data = modeData();
   if (data.loaded) { renderCats(); applyFilter(); return; }
@@ -1189,10 +1206,18 @@ function fmtTs(ts)   { return new Date(ts * 1000).toLocaleTimeString([], { hour:
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 function showSettings() {
-  id('cfgServer').value = S.cfg.server    || '';
-  id('cfgUser').value   = S.cfg.username  || '';
-  id('cfgPass').value   = S.password      || '';
-  id('cfgProxy').value  = S.cfg.liveProxy || '';
+  id('cfgServer').value = S.cfg.server   || '';
+  id('cfgUser').value   = S.cfg.username || '';
+  id('cfgPass').value   = S.password     || '';
+  // Show current Pi tunnel status
+  const ps = id('piStatus');
+  if (S.cfg.liveProxy) {
+    ps.style.color = 'var(--live)';
+    ps.textContent = '🟢 Connected — ' + S.cfg.liveProxy;
+  } else {
+    ps.style.color = 'var(--err)';
+    ps.textContent = '🔴 Not connected — Pi may be offline';
+  }
   id('settingsModal').style.display = 'flex';
   setTimeout(() => id('cfgServer').focus(), 40);
 }
@@ -1209,7 +1234,7 @@ function saveSettings() {
   }
   S.cfg.server    = server;
   S.cfg.username  = username;
-  S.cfg.liveProxy = id('cfgProxy').value.trim().replace(/\/+$/, '');
+  // liveProxy is auto-managed via refreshTunnelUrl(), not manually editable
   S.password      = password;
   sessionStorage.setItem('iptv_pass', password);
   saveCfg();
