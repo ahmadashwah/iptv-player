@@ -493,6 +493,11 @@ video { width: 100%; height: 100%; display: block; background: #000; }
       <input type="password" id="cfgPass" placeholder="your_password" autocomplete="current-password">
       <div class="field-note">🔒 Password is saved for this browser session only, cleared when you close the tab.</div>
     </div>
+    <div class="field">
+      <label>Live TV Proxy <span style="color:var(--muted);font-weight:400">(optional — needed for hosted deployments)</span></label>
+      <input type="text" id="cfgProxy" placeholder="https://iptv-cors.YOUR-NAME.workers.dev" autocomplete="off">
+      <div class="field-note">📡 Deploy the free <strong>worker.js</strong> from the repo to Cloudflare Workers, paste the URL here to fix Live TV. <a href="https://github.com/ahmadashwah/iptv-player#live-tv-proxy" target="_blank" style="color:var(--accent)">Setup guide ↗</a></div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="hideSettings()">Cancel</button>
       <button class="btn btn-primary" onclick="saveSettings()">Save &amp; Load</button>
@@ -557,8 +562,9 @@ function loadCfg() {
 }
 function saveCfg() {
   localStorage.setItem('iptv_cfg', JSON.stringify({
-    server:   S.cfg.server   || '',
-    username: S.cfg.username || '',
+    server:    S.cfg.server    || '',
+    username:  S.cfg.username  || '',
+    liveProxy: S.cfg.liveProxy || '',
   }));
 }
 
@@ -960,13 +966,19 @@ function playDirect(url) {
 // gets a fresh timestamp to bust allorigins.win's cache so live streams update.
 // On local HTTP dev, use the normal Railway proxy as before.
 
-function aoWrap(url, bustCache) {
-  // Put the timestamp on allorigins.win's own query string (NOT on the target URL,
-  // which causes the IPTV server to reject it with 503).
-  // allorigins.win uses the full query string as cache key, so &_= forces a fresh fetch.
+function liveProxyWrap(url, bustCache) {
+  // Use Cloudflare Worker if configured (handles manifest + segments from same IP).
+  // Falls back to allorigins.win for manifests only (blocks .ts segments).
+  const cfWorker = (typeof S !== 'undefined' && S.cfg?.liveProxy) ? S.cfg.liveProxy : '';
   const ts = bustCache ? '&_=' + Date.now() : '';
+  if (cfWorker) {
+    return cfWorker + '?url=' + encodeURIComponent(url) + ts;
+  }
+  // allorigins.win fallback — works for manifests, segments may fail
   return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url) + ts;
 }
+// Keep legacy alias used in rewriteM3U8Lines
+function aoWrap(url, bustCache) { return liveProxyWrap(url, bustCache); }
 
 function rewriteM3U8Lines(text, reqUrl) {
   let base;
@@ -1121,9 +1133,10 @@ function fmtTs(ts)   { return new Date(ts * 1000).toLocaleTimeString([], { hour:
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 function showSettings() {
-  id('cfgServer').value = S.cfg.server   || '';
-  id('cfgUser').value   = S.cfg.username || '';
-  id('cfgPass').value   = S.password     || '';
+  id('cfgServer').value = S.cfg.server    || '';
+  id('cfgUser').value   = S.cfg.username  || '';
+  id('cfgPass').value   = S.password      || '';
+  id('cfgProxy').value  = S.cfg.liveProxy || '';
   id('settingsModal').style.display = 'flex';
   setTimeout(() => id('cfgServer').focus(), 40);
 }
@@ -1138,9 +1151,10 @@ function saveSettings() {
   if (server !== S.cfg.server || username !== S.cfg.username) {
     S.live.loaded = S.vod.loaded = S.series.loaded = false;
   }
-  S.cfg.server   = server;
-  S.cfg.username = username;
-  S.password     = password;
+  S.cfg.server    = server;
+  S.cfg.username  = username;
+  S.cfg.liveProxy = id('cfgProxy').value.trim().replace(/\/+$/, '');
+  S.password      = password;
   sessionStorage.setItem('iptv_pass', password);
   saveCfg();
   hideSettings();
