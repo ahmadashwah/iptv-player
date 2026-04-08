@@ -791,10 +791,19 @@ function playLive(ch) {
     ? ch.direct_source
     : `${base}/live/${username}/${S.password}/${ch.stream_id}.m3u8`;
 
-  // On HTTPS (Railway): custom loader wraps the URL in allorigins.win (HTTPS),
-  // so the stream URL can stay HTTP — allorigins.win fetches it server-side.
-  // On HTTP (local dev): route through Railway proxy as before.
-  const hlsUrl = window.location.protocol === 'https:' ? streamUrl : px(streamUrl);
+  // Route the live stream URL through the right proxy:
+  // • Pi tunnel (liveProxy set): pass tunnel URL directly — hls.js fetches it via HTTPS,
+  //   and root-relative /proxy?url=... segment paths in the manifest resolve correctly.
+  // • No Pi tunnel (HTTPS): raw URL stays, custom loader wraps it in allorigins.win.
+  // • Local HTTP dev: route through Railway proxy as before.
+  let hlsUrl;
+  if (window.location.protocol !== 'https:') {
+    hlsUrl = px(streamUrl);
+  } else if (S.cfg?.liveProxy) {
+    hlsUrl = `${S.cfg.liveProxy}/proxy?url=${encodeURIComponent(streamUrl)}`;
+  } else {
+    hlsUrl = streamUrl;
+  }
   hlsPlay(hlsUrl);
   updateEPGChannel(ch.name);
   clearTimeout(S.epgTimer);
@@ -1093,9 +1102,11 @@ function hlsPlay(url, nativeFallback) {
 
   if (Hls.isSupported()) {
     const hlsCfg = { enableWorker: true };
-    // For live TV on HTTPS, use direct-fetch loader so manifest comes from
-    // user's IP (not Railway's blocked IP)
-    if (S.mode === 'live' && window.location.protocol === 'https:') {
+    // For live TV on HTTPS without a Pi tunnel proxy, use the custom loader that
+    // fetches via allorigins.win and rewrites segment URLs.
+    // When liveProxy IS set, the URL passed in is already the tunnel URL — hls.js
+    // fetches it directly (HTTPS, no mixed-content) so no custom loader is needed.
+    if (S.mode === 'live' && window.location.protocol === 'https:' && !S.cfg?.liveProxy) {
       hlsCfg.loader = createDirectLoader();
     }
     const hls = new Hls(hlsCfg);
