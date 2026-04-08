@@ -3,6 +3,7 @@
 const express = require('express');
 const http    = require('http');
 const https   = require('https');
+const zlib    = require('zlib');
 const { URL } = require('url');
 const path    = require('path');
 
@@ -46,8 +47,9 @@ function fetchRemote(url, res, hops, range) {
   const mod = parsed.protocol === 'https:' ? https : http;
 
   const reqHeaders = {
-    'User-Agent': 'Mozilla/5.0 (IPTV-Proxy/1.0)',
-    'Accept':     '*/*',
+    'User-Agent':      'Mozilla/5.0 (IPTV-Proxy/1.0)',
+    'Accept':          '*/*',
+    'Accept-Encoding': 'gzip, deflate, identity', // request compression so we can decompress properly
   };
   if (range) reqHeaders['Range'] = range;
 
@@ -75,14 +77,24 @@ function fetchRemote(url, res, hops, range) {
     const isM3U8 = ct.includes('mpegurl') || /\.m3u8?(\?|$)/i.test(parsed.pathname);
 
     if (isM3U8) {
-      let body = '';
-      upRes.setEncoding('utf8');
-      upRes.on('data', d => body += d);
-      upRes.on('end', () => {
+      // Decompress if needed, then read as UTF-8 text
+      const encoding = (upRes.headers['content-encoding'] || '').toLowerCase();
+      let stream = upRes;
+      if (encoding === 'gzip')    stream = upRes.pipe(zlib.createGunzip());
+      else if (encoding === 'deflate') stream = upRes.pipe(zlib.createInflate());
+      else if (encoding === 'br') stream = upRes.pipe(zlib.createBrotliDecompress());
+
+      const chunks = [];
+      stream.on('data', d => chunks.push(Buffer.isBuffer(d) ? d : Buffer.from(d)));
+      stream.on('end', () => {
         if (res.headersSent) return;
+        const body = Buffer.concat(chunks).toString('utf8');
         res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
         res.setHeader('Cache-Control', 'no-cache');
         res.send(rewriteM3U8(body, url));
+      });
+      stream.on('error', err => {
+        if (!res.headersSent) res.status(502).json({ error: 'Decompress error: ' + err.message });
       });
     } else {
       if (res.headersSent) return;
