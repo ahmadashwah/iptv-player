@@ -824,10 +824,12 @@ function playVOD(m) {
   const { server, username } = S.cfg;
   const base = server.replace(/\/+$/, '');
   const ext  = m.container_extension || 'mp4';
-  // Build the raw HTTP URL then route through Railway proxy on HTTPS pages
-  // (the IPTV server doesn't support HTTPS for movie files, so direct HTTPS fails)
+  // The IPTV server blocks datacenter IPs (Railway) for movie files too.
+  // Route through the Pi tunnel when available, else fall back to Railway proxy.
   const rawUrl = `${base}/movie/${username}/${S.password}/${m.stream_id}.${ext}`;
-  const url = window.location.protocol === 'https:' ? px(rawUrl) : rawUrl;
+  const url = window.location.protocol !== 'https:' ? rawUrl
+    : S.cfg?.liveProxy ? `${S.cfg.liveProxy}/proxy?url=${encodeURIComponent(rawUrl)}`
+    : px(rawUrl);
 
   updateEPGChannel(m.name);
   clearEPGBar();
@@ -932,9 +934,11 @@ function playEpisode(ep) {
   const { server, username } = S.cfg;
   const base = server.replace(/\/+$/, '');
   const ext  = ep.container_extension || 'mp4';
-  // Route through Railway proxy on HTTPS (IPTV server doesn't serve series over HTTPS)
+  // IPTV server blocks datacenter IPs — route through Pi tunnel, fall back to Railway proxy
   const rawUrl = `${base}/series/${username}/${S.password}/${ep.id}.${ext}`;
-  const url  = window.location.protocol === 'https:' ? px(rawUrl) : rawUrl;
+  const url  = window.location.protocol !== 'https:' ? rawUrl
+    : S.cfg?.liveProxy ? `${S.cfg.liveProxy}/proxy?url=${encodeURIComponent(rawUrl)}`
+    : px(rawUrl);
 
   S.currentCh = ep;
   id('overlayStatus').textContent = 'Loading…';
