@@ -101,7 +101,7 @@ function fetchRemote(url, res, hops, range) {
       // Forward relevant headers including range-related ones
       const passHeaders = {};
       for (const h of [
-        'content-type', 'content-length', 'content-range',
+        'content-type', 'content-length', 'content-encoding', 'content-range',
         'accept-ranges', 'cache-control', 'last-modified', 'etag',
       ]) {
         if (upRes.headers[h]) passHeaders[h] = upRes.headers[h];
