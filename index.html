@@ -961,10 +961,12 @@ function playDirect(url) {
 // gets a fresh timestamp to bust allorigins.win's cache so live streams update.
 // On local HTTP dev, use the normal Railway proxy as before.
 
-function aoWrap(url) {
-  // Add timestamp so allorigins.win doesn't serve a stale cached manifest
-  const sep = url.includes('?') ? '&' : '?';
-  return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url + sep + '_t=' + Date.now());
+function aoWrap(url, bustCache) {
+  // Put the timestamp on allorigins.win's own query string (NOT on the target URL,
+  // which causes the IPTV server to reject it with 503).
+  // allorigins.win uses the full query string as cache key, so &_= forces a fresh fetch.
+  const ts = bustCache ? '&_=' + Date.now() : '';
+  return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url) + ts;
 }
 
 function rewriteM3U8Lines(text, reqUrl) {
@@ -1003,7 +1005,7 @@ function createDirectLoader() {
           ? decodeURIComponent(new URL(reqUrl).searchParams.get('url') || reqUrl).replace(/[&?]_t=\d+$/, '')
           : reqUrl;
 
-        fetch(aoWrap(realUrl), { signal: abortCtrl.signal })
+        fetch(aoWrap(realUrl, true), { signal: abortCtrl.signal })
           .then(r => {
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             return r.text();
