@@ -1049,11 +1049,14 @@ function createDirectLoader() {
             }
 
             const now = performance.now();
-            callbacks.onSuccess(
-              { data: rewritten, url: proxyUrl },
-              { trequest: now - 10, tfirst: now - 5, tload: now, loaded: rewritten.length, total: rewritten.length },
-              context, null
-            );
+            const stats = {
+              aborted: false, loaded: rewritten.length, retry: 0,
+              total: rewritten.length, chunkCount: 1, bwEstimate: 0,
+              loading: { start: now - 10, first: now - 5, end: now },
+              parsing: { start: now, end: now },
+              buffering: { start: now, first: now, end: now },
+            };
+            callbacks.onSuccess({ data: rewritten, url: proxyUrl }, stats, context, null);
           })
           .catch(e => {
             if (e.name === 'AbortError') return;
