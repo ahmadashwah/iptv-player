@@ -1016,17 +1016,41 @@ function createDirectLoader() {
           ? decodeURIComponent(new URL(reqUrl).searchParams.get('url') || reqUrl).replace(/[&?]_t=\d+$/, '')
           : reqUrl;
 
-        fetch(aoWrap(realUrl, true), { signal: abortCtrl.signal })
+        const proxyUrl = liveProxyWrap(realUrl, true);
+        // The proxy base URL (tunnel or allorigins) — used to absolutize relative segment paths
+        const proxyBase = (typeof S !== 'undefined' && S.cfg?.liveProxy)
+          ? S.cfg.liveProxy  // e.g. https://flex-xxx.trycloudflare.com
+          : 'https://api.allorigins.win';
+
+        fetch(proxyUrl, { signal: abortCtrl.signal })
           .then(r => {
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             return r.text();
           })
           .then(text => {
             if (!text || !text.includes('#EXTM3U')) throw new Error('Empty or invalid manifest');
-            const rewritten = rewriteM3U8Lines(text, realUrl);
+
+            // If using the Pi tunnel, the proxy already rewrites segment URLs to
+            // root-relative paths like /proxy?url=.... Make them absolute so hls.js
+            // can fetch them correctly regardless of what base URL it uses.
+            let rewritten;
+            if (S.cfg?.liveProxy) {
+              rewritten = text.split('\n').map(line => {
+                const t = line.trim();
+                if (!t || t.startsWith('#')) return line;
+                // Root-relative → absolute with tunnel base
+                if (t.startsWith('/')) return proxyBase + t;
+                // Already absolute → keep as-is
+                return line;
+              }).join('\n');
+            } else {
+              // allorigins.win fallback: rewrite using standard logic
+              rewritten = rewriteM3U8Lines(text, realUrl);
+            }
+
             const now = performance.now();
             callbacks.onSuccess(
-              { data: rewritten, url: reqUrl },
+              { data: rewritten, url: proxyUrl },
               { trequest: now - 10, tfirst: now - 5, tload: now, loaded: rewritten.length, total: rewritten.length },
               context, null
             );
