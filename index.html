@@ -972,7 +972,7 @@ function liveProxyWrap(url, bustCache) {
   const cfWorker = (typeof S !== 'undefined' && S.cfg?.liveProxy) ? S.cfg.liveProxy : '';
   const ts = bustCache ? '&_=' + Date.now() : '';
   if (cfWorker) {
-    return cfWorker + '?url=' + encodeURIComponent(url) + ts;
+    return cfWorker + '/proxy?url=' + encodeURIComponent(url) + ts;
   }
   // allorigins.win fallback — works for manifests, segments may fail
   return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url) + ts;
