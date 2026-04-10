@@ -466,13 +466,15 @@ body.playing #nowBar { opacity: 1; }
 .now-track  { height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; max-width: 400px; }
 .now-fill   { height: 100%; background: var(--accent); border-radius: 2px; transition: width 1s linear; }
 
-/* EPG bar below video */
+/* EPG bar below video — only shown for live TV */
 #epgBar {
   background: #111; border-top: 1px solid #222;
   height: 60px; padding: 0 20px;
-  display: flex; align-items: center; gap: 16px;
+  display: none; align-items: center; gap: 16px;
   flex-shrink: 0; overflow: hidden;
 }
+body.playing.mode-live  #epgBar { display: flex; }
+body.loading.mode-live  #epgBar { display: flex; }
 .epg-chname { font-size: 12px; font-weight: 700; color: var(--accent); max-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
 .epg-vdiv   { width: 1px; height: 36px; background: #2a2a2a; flex-shrink: 0; }
 .epg-slot   { flex: 1; min-width: 0; }
@@ -1329,6 +1331,9 @@ function openPanel(mode) {
   S.query    = '';
   document.body.classList.add('panel-open');
   document.body.classList.remove('search-open', 'home');
+  document.body.classList.toggle('mode-live',   mode === 'live');
+  document.body.classList.toggle('mode-vod',    mode === 'vod');
+  document.body.classList.toggle('mode-series', mode === 'series');
   setRailActive(mode);
   const titles = { live: 'Live TV', vod: 'Movies', series: 'Series' };
   id('panelTitle').textContent = titles[mode] || mode;
@@ -1951,8 +1956,12 @@ function onSeriesModalBg()  { /* replaced by detail page */ }
 
 // ─── Video state helpers ──────────────────────────────────────────────────────
 function setVideoLoading() {
-  document.body.classList.remove('playing', 'home');
+  document.body.classList.remove('playing', 'home', 'detail');
   document.body.classList.add('loading');
+  // Sync mode class
+  document.body.classList.toggle('mode-live',   S.mode === 'live');
+  document.body.classList.toggle('mode-vod',    S.mode === 'vod');
+  document.body.classList.toggle('mode-series', S.mode === 'series');
 }
 function setVideoPlaying() {
   document.body.classList.remove('loading');
