@@ -7,14 +7,14 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
 <style>
 :root {
-  --bg:        #0b0b14;
-  --surface:   #13131f;
-  --surface2:  #1c1c2e;
-  --border:    #252540;
-  --accent:    #7b6ef6;
-  --accent-lo: rgba(123,110,246,.18);
-  --text:      #e2e2f0;
-  --muted:     #6b6b85;
+  --bg:        #141414;
+  --surface:   #1a1a1a;
+  --surface2:  #242424;
+  --border:    #333;
+  --accent:    #e50914;
+  --accent-lo: rgba(229,9,20,.12);
+  --text:      #fff;
+  --muted:     #999;
   --live:      #4ade80;
   --err:       #f87171;
   --gold:      #f5c842;
@@ -24,439 +24,793 @@ html, body { height: 100%; overflow: hidden; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', sans-serif;
   font-size: 14px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   LEFT ICON RAIL
+════════════════════════════════════════════════════════════ */
+#rail {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 68px;
+  background: rgba(10,10,10,0.97);
+  border-right: 1px solid #1e1e1e;
   display: flex;
   flex-direction: column;
-}
-
-/* ── Topbar ─────────────────────────────────────────────────────────────── */
-#topbar {
-  height: 52px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 16px;
-  flex-shrink: 0;
-  z-index: 10;
+  padding: 20px 0;
+  gap: 6px;
+  z-index: 100;
+  transition: width .25s cubic-bezier(.4,0,.2,1);
 }
-.logo {
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  color: var(--accent);
-  flex-shrink: 0;
+#rail.expanded {
+  width: 180px;
+  align-items: flex-start;
 }
-.logo em { color: var(--text); font-style: normal; }
+.rail-logo {
+  font-size: 20px; font-weight: 900;
+  color: #e50914; letter-spacing: 2px;
+  margin-bottom: 18px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; flex-shrink: 0;
+  overflow: hidden; white-space: nowrap;
+  padding: 0 10px;
+}
+#rail.expanded .rail-logo { padding-left: 20px; justify-content: flex-start; }
+.rail-item {
+  width: 100%; height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; cursor: pointer;
+  position: relative;
+  transition: background .15s;
+  flex-shrink: 0; overflow: hidden; white-space: nowrap;
+}
+.rail-item .rail-label {
+  max-width: 0; overflow: hidden;
+  transition: max-width .25s cubic-bezier(.4,0,.2,1), opacity .2s;
+}
+#rail.expanded .rail-item .rail-label { max-width: 140px; }
+.rail-item:hover { background: rgba(255,255,255,0.06); }
+.rail-item.active { background: var(--accent-lo); }
+.rail-item.active::before {
+  content: ''; position: absolute;
+  left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--accent);
+}
+.rail-icon {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: #777;
+  transition: color .15s;
+}
+.rail-item:hover .rail-icon  { color: #fff; }
+.rail-item.active .rail-icon { color: #fff; }
+.rail-label {
+  font-size: 14px; font-weight: 500;
+  color: #aaa; opacity: 0;
+  pointer-events: none; flex-shrink: 0;
+}
+#rail.expanded .rail-label { opacity: 1; }
+.rail-item.active .rail-label { color: #fff; }
+.rail-item:hover .rail-label  { color: #fff; }
+.rail-spacer { flex: 1; }
 
-#searchInput {
-  flex: 1;
-  max-width: 260px;
-  height: 32px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0 12px;
-  color: var(--text);
-  font-size: 13px;
-  outline: none;
+/* ════════════════════════════════════════════════════════════
+   SLIDE-OUT PANEL
+════════════════════════════════════════════════════════════ */
+#panel {
+  position: fixed;
+  left: 68px; top: 0; bottom: 0;
+  width: 0; overflow: hidden;
+  background: #1a1a1a;
+  border-right: 1px solid #242424;
+  z-index: 90;
+  transition: width .25s cubic-bezier(.4,0,.2,1);
+  display: flex; flex-direction: column;
 }
-#searchInput::placeholder { color: var(--muted); }
-#searchInput:focus { border-color: var(--accent); }
-.spacer { flex: 1; }
-.btn {
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 6px;
-  border: none;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: opacity .15s;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-.btn:hover  { opacity: .82; }
-.btn:active { opacity: .68; }
-.btn:disabled { opacity: .45; cursor: default; }
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-ghost   { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+body.panel-open  #panel,
+body.search-open #panel { width: 300px; }
 
-/* ── Layout ─────────────────────────────────────────────────────────────── */
-#layout { display: flex; flex: 1; overflow: hidden; }
+#searchPanel  { display: none; flex-direction: column; height: 100%; }
+body.search-open #searchPanel  { display: flex; }
+body.search-open #channelPanel { display: none; }
+#channelPanel { display: flex; flex-direction: column; height: 100%; }
 
-/* ── Sidebar ────────────────────────────────────────────────────────────── */
-#sidebar {
-  width: 295px;
-  min-width: 295px;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
+.panel-header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid #242424;
   flex-shrink: 0;
 }
-
-/* Mode switcher */
-#modeSwitch {
-  display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+.panel-search {
+  display: flex; align-items: center;
+  background: #222; border: 1px solid #333;
+  border-radius: 4px; overflow: hidden;
+  margin-top: 10px;
 }
-.mode-btn {
-  flex: 1;
-  height: 36px;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .15s;
-  letter-spacing: .3px;
+.panel-search-icon { padding: 0 10px; color: #555; font-size: 14px; flex-shrink: 0; }
+.panel-search input {
+  flex: 1; height: 36px; background: transparent;
+  border: none; outline: none; color: #fff; font-size: 13px; padding-right: 10px;
 }
-.mode-btn:hover  { color: var(--text); }
-.mode-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.panel-search input::placeholder { color: #555; }
+.panel-title {
+  font-size: 13px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase; color: #888;
+}
 
-/* Category strip */
+/* Category pills */
 #catStrip {
-  padding: 7px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  max-height: 100px;
-  overflow-y: auto;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+  display: flex; gap: 6px; flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid #1e1e1e;
+  flex-shrink: 0; overflow-y: auto; max-height: 80px;
 }
 .cat-btn {
-  padding: 3px 9px;
-  border-radius: 4px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 11px;
-  cursor: pointer;
-  transition: all .15s;
-  white-space: nowrap;
+  padding: 3px 11px; border-radius: 20px;
+  background: #2a2a2a; border: 1px solid #3a3a3a;
+  color: #888; font-size: 11px; cursor: pointer;
+  white-space: nowrap; transition: all .15s;
 }
-.cat-btn:hover  { color: var(--text); border-color: var(--accent); }
+.cat-btn:hover  { color: #fff; border-color: #666; }
 .cat-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-/* Channel count */
 #chCount {
-  padding: 3px 12px;
-  font-size: 11px;
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-  min-height: 22px;
+  padding: 4px 16px; font-size: 11px;
+  color: #555; border-bottom: 1px solid #1e1e1e;
+  flex-shrink: 0; min-height: 20px;
 }
 
-/* Channel / content list */
+/* Channel list */
 #channelList { flex: 1; overflow-y: auto; }
+#channelList::-webkit-scrollbar { width: 3px; }
+#channelList::-webkit-scrollbar-thumb { background: #333; }
 
-/* ── Live channel item ───────────────────────────────────────────────────── */
+/* Search result filters */
+.search-filters {
+  display: flex; gap: 6px; padding: 10px 16px;
+  border-bottom: 1px solid #1e1e1e; flex-shrink: 0;
+}
+.sf-btn {
+  padding: 4px 12px; border-radius: 20px;
+  background: #2a2a2a; border: 1px solid #3a3a3a;
+  color: #888; font-size: 11px; cursor: pointer;
+  white-space: nowrap; transition: all .15s;
+}
+.sf-btn:hover  { color: #fff; border-color: #666; }
+.sf-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+#searchResults { flex: 1; overflow-y: auto; }
+
+/* ════════════════════════════════════════════════════════════
+   CHANNEL / VOD / SERIES items
+════════════════════════════════════════════════════════════ */
 .ch-item {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 12px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  transition: background .1s;
-  position: relative;
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; border-bottom: 1px solid #1e1e1e;
+  cursor: pointer; transition: background .1s; position: relative;
 }
-.ch-item:hover  { background: var(--surface2); }
-.ch-item.active { background: var(--accent-lo); border-left: 3px solid var(--accent); padding-left: 9px; }
-.ch-num { font-size: 11px; color: var(--muted); min-width: 22px; text-align: right; flex-shrink: 0; }
-.ch-logo {
-  width: 34px; height: 34px; border-radius: 4px;
-  background: var(--surface2); object-fit: contain; flex-shrink: 0;
-}
-.ch-fb {
-  width: 34px; height: 34px; border-radius: 4px;
-  background: var(--surface2); flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; font-size: 16px;
-}
-.ch-info  { flex: 1; min-width: 0; }
-.ch-name  { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ch-prog  { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-.live-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--live); flex-shrink: 0;
-  animation: pulse 2s infinite;
-}
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+.ch-item:hover  { background: #242424; }
+.ch-item.active { background: var(--accent-lo); border-left: 3px solid var(--accent); padding-left: 11px; }
+.ch-num  { font-size: 11px; color: #555; min-width: 22px; text-align: right; flex-shrink: 0; }
+.ch-logo { width: 36px; height: 36px; border-radius: 4px; background: #2a2a2a; object-fit: contain; flex-shrink: 0; }
+.ch-fb   { width: 36px; height: 36px; border-radius: 4px; background: #2a2a2a; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.ch-info { flex: 1; min-width: 0; }
+.ch-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.ch-prog { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-/* ── VOD item ────────────────────────────────────────────────────────────── */
 .vod-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  transition: background .1s;
-  position: relative;
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 14px; border-bottom: 1px solid #1e1e1e;
+  cursor: pointer; transition: background .1s; position: relative;
 }
-.vod-item:hover  { background: var(--surface2); }
-.vod-item.active { background: var(--accent-lo); border-left: 3px solid var(--accent); padding-left: 9px; }
-.vod-poster {
-  width: 38px; height: 52px; border-radius: 4px;
-  background: var(--surface2); object-fit: cover; flex-shrink: 0;
-}
-.vod-poster-fb {
-  width: 38px; height: 52px; border-radius: 4px;
-  background: var(--surface2); flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; font-size: 20px;
-}
-.vod-info { flex: 1; min-width: 0; }
+.vod-item:hover  { background: #242424; }
+.vod-item.active { background: var(--accent-lo); border-left: 3px solid var(--accent); padding-left: 11px; }
+.vod-poster    { width: 40px; height: 56px; border-radius: 4px; background: #2a2a2a; object-fit: cover; flex-shrink: 0; }
+.vod-poster-fb { width: 40px; height: 56px; border-radius: 4px; background: #2a2a2a; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.vod-info  { flex: 1; min-width: 0; }
 .vod-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vod-meta  { font-size: 11px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; }
 .vod-rating { color: var(--gold); font-size: 11px; }
 
-/* ── Series item ─────────────────────────────────────────────────────────── */
-.ser-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  transition: background .1s;
-}
-.ser-item:hover  { background: var(--surface2); }
-.ser-poster {
-  width: 38px; height: 52px; border-radius: 4px;
-  background: var(--surface2); object-fit: cover; flex-shrink: 0;
-}
-.ser-poster-fb {
-  width: 38px; height: 52px; border-radius: 4px;
-  background: var(--surface2); flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; font-size: 20px;
-}
-.ser-info   { flex: 1; min-width: 0; }
-.ser-title  { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ser-meta   { font-size: 11px; color: var(--muted); margin-top: 3px; }
-.ser-arrow  { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+.ser-item  { display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-bottom: 1px solid #1e1e1e; cursor: pointer; transition: background .1s; }
+.ser-item:hover { background: #242424; }
+.ser-poster    { width: 40px; height: 56px; border-radius: 4px; background: #2a2a2a; object-fit: cover; flex-shrink: 0; }
+.ser-poster-fb { width: 40px; height: 56px; border-radius: 4px; background: #2a2a2a; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.ser-info  { flex: 1; min-width: 0; }
+.ser-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ser-meta  { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.ser-arrow { color: #555; font-size: 14px; flex-shrink: 0; }
 
-.ch-empty {
-  display: flex; flex-direction: column; align-items: center;
-  justify-content: center; padding: 48px 16px;
-  gap: 8px; color: var(--muted); font-size: 13px; text-align: center;
+.search-result-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; border-bottom: 1px solid #1e1e1e;
+  cursor: pointer; transition: background .1s;
 }
-.ch-empty .icon { font-size: 36px; }
+.search-result-row:hover { background: #242424; }
+.sr-type-badge { font-size: 9px; font-weight: 700; letter-spacing: 1px; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; flex-shrink: 0; }
+.sr-type-live   { background: rgba(229,9,20,0.3); color: #ff6b6b; }
+.sr-type-movie  { background: rgba(74,222,128,0.2); color: #4ade80; }
+.sr-type-series { background: rgba(251,191,36,0.2); color: #fbbf24; }
 
-/* ── Player wrap ─────────────────────────────────────────────────────────── */
-#playerWrap {
-  flex: 1; display: flex; flex-direction: column;
-  background: #000; min-width: 0;
+.ch-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 16px; gap: 10px; color: var(--muted); font-size: 13px; text-align: center; }
+.ch-empty .icon { font-size: 40px; }
+.loading-row { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 28px 16px; color: var(--muted); font-size: 13px; }
+.spinner { width: 18px; height: 18px; border: 2px solid #333; border-top-color: var(--accent); border-radius: 50%; animation: spin .65s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ════════════════════════════════════════════════════════════
+   MAIN AREA
+════════════════════════════════════════════════════════════ */
+#main {
+  position: fixed;
+  left: 68px; top: 0; right: 0; bottom: 0;
+  transition: left .25s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+  background: #000;
 }
-#videoArea { flex: 1; position: relative; background: #000; overflow: hidden; }
-video { width: 100%; height: 100%; display: block; background: #000; }
-#overlay {
+body.panel-open  #main,
+body.search-open #main { left: 368px; }
+
+/* ── BROWSE SCREEN (default / idle) ─────────────────────────── */
+#browseScreen {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 14px; color: var(--muted); pointer-events: none;
-  background: radial-gradient(ellipse at center, #0d0d1a 0%, #000 100%);
+  transition: opacity .4s;
 }
-.ov-icon { font-size: 72px; }
-.ov-text { font-size: 15px; }
-.ov-sub  { font-size: 12px; }
+body.playing #browseScreen { opacity: 0; pointer-events: none; }
+body.loading #browseScreen { opacity: 0; pointer-events: none; }
+body.home    #browseScreen { display: none; }
 
-/* ── EPG bar ─────────────────────────────────────────────────────────────── */
+/* Hero backdrop */
+#hero { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+#heroBg {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(105deg, rgba(10,10,10,1) 0%, rgba(10,10,10,0.55) 40%, transparent 70%),
+    linear-gradient(to top, rgba(10,10,10,1) 0%, rgba(10,10,10,0.3) 30%, transparent 60%),
+    linear-gradient(135deg, #0d1117 0%, #1a0d2e 30%, #2d0a0a 60%, #1a1508 100%);
+}
+#heroBg::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 70% 40%, rgba(229,9,20,0.18) 0%, transparent 55%),
+              radial-gradient(ellipse at 30% 70%, rgba(50,30,100,0.2) 0%, transparent 50%);
+  animation: bgShimmer 8s ease-in-out infinite alternate;
+}
+@keyframes bgShimmer { 0%{opacity:.6;transform:scale(1)} 100%{opacity:1;transform:scale(1.04)} }
+
+#heroContent {
+  position: absolute; bottom: 32px; left: 48px;
+  max-width: 480px; z-index: 2;
+}
+.hero-badge { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px; }
+.hero-badge-icon { width: 20px; height: 20px; background: var(--accent); border-radius: 3px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.hero-badge-text { font-size: 13px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #ccc; }
+.hero-title { font-size: 52px; font-weight: 900; line-height: 1.0; margin-bottom: 12px; letter-spacing: -1px; text-shadow: 0 2px 20px rgba(0,0,0,0.8); }
+.hero-desc  { font-size: 15px; color: #bbb; line-height: 1.5; margin-bottom: 24px; max-width: 420px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hero-actions { display: flex; gap: 10px; align-items: center; }
+.hero-btn-play {
+  display: flex; align-items: center; gap: 10px;
+  background: #fff; color: #000; padding: 12px 28px; border-radius: 4px;
+  font-size: 16px; font-weight: 700; border: none; cursor: pointer; transition: background .15s;
+}
+.hero-btn-play:hover { background: rgba(255,255,255,0.85); }
+.hero-btn-play svg { width: 18px; height: 18px; fill: #000; }
+.hero-btn-info {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(109,109,110,0.5); color: #fff; padding: 12px 28px; border-radius: 4px;
+  font-size: 16px; font-weight: 700; border: none; cursor: pointer; transition: background .15s;
+  backdrop-filter: blur(4px);
+}
+.hero-btn-info:hover { background: rgba(109,109,110,0.35); }
+.hero-btn-info svg { width: 18px; height: 18px; }
+.hero-rating {
+  position: absolute; top: 24px; right: 24px;
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.7); border-left: 3px solid rgba(255,255,255,0.5);
+  padding: 4px 12px;
+}
+
+/* Bottom thumbnail row */
+#thumbRow {
+  flex-shrink: 0; padding: 16px 48px 20px;
+  background: linear-gradient(to bottom, transparent, rgba(10,10,10,0.98) 30%);
+  margin-top: -60px; position: relative; z-index: 3;
+  display: none;
+}
+#thumbRow.has-items { display: block; }
+.thumb-row-title { font-size: 14px; font-weight: 600; color: #ccc; margin-bottom: 12px; }
+.thumb-scroller { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+.thumb-scroller::-webkit-scrollbar { display: none; }
+.thumb-card {
+  flex: 0 0 160px; height: 90px; border-radius: 4px; overflow: hidden;
+  cursor: pointer; position: relative;
+  transition: transform .2s, box-shadow .2s; flex-shrink: 0;
+}
+.thumb-card:hover { transform: scale(1.06) translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.8); z-index: 10; }
+.thumb-card-bg { position: absolute; inset: 0; background: #1a1a1a; }
+.thumb-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.thumb-card-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%);
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 8px; opacity: 0; transition: opacity .2s;
+}
+.thumb-card:hover .thumb-card-overlay { opacity: 1; }
+.thumb-card-name { font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.thumb-card-sub  { font-size: 10px; color: #aaa; margin-top: 1px; }
+.thumb-live-badge { position: absolute; top: 6px; left: 6px; background: var(--accent); font-size: 9px; font-weight: 700; letter-spacing: 1px; padding: 2px 5px; border-radius: 2px; text-transform: uppercase; }
+.tc1{background:linear-gradient(135deg,#0d1117,#1a2d3a)}
+.tc2{background:linear-gradient(135deg,#1a0d0d,#3d1010)}
+.tc3{background:linear-gradient(135deg,#0d1a0d,#1a3d1a)}
+.tc4{background:linear-gradient(135deg,#1a1a0d,#3d3d10)}
+.tc5{background:linear-gradient(135deg,#0d0d1a,#10103d)}
+.tc6{background:linear-gradient(135deg,#1a0d1a,#3d103d)}
+.tc7{background:linear-gradient(135deg,#0d1a1a,#103d3d)}
+.tc8{background:linear-gradient(135deg,#1a100d,#3d2510)}
+
+/* ── HOME SCREEN ─────────────────────────────────────────────── */
+#homeScreen {
+  position: absolute; inset: 0;
+  overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
+  display: none; flex-direction: column; background: #141414;
+}
+#homeScreen::-webkit-scrollbar { display: none; }
+body.home #homeScreen    { display: flex; }
+body.playing #homeScreen { display: none; }
+body.loading #homeScreen { display: none; }
+
+#homeHero {
+  position: relative; height: 52vh; min-height: 280px;
+  flex-shrink: 0; overflow: hidden;
+}
+#homeHeroBg {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(105deg, rgba(20,20,20,1) 0%, rgba(20,20,20,0.5) 40%, transparent 70%),
+    linear-gradient(to top, #141414 0%, transparent 35%),
+    radial-gradient(ellipse at 65% 35%, rgba(229,9,20,0.22) 0%, transparent 55%),
+    linear-gradient(135deg, #0d1117 0%, #1a0a0a 50%, #0a0d1a 100%);
+}
+#homeHeroContent { position: absolute; bottom: 36px; left: 40px; max-width: 420px; z-index: 2; }
+.hh-badge { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.hh-dot   { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1.5s infinite; }
+.hh-title { font-size: 42px; font-weight: 900; line-height: 1.0; margin-bottom: 10px; letter-spacing: -1px; }
+.hh-desc  { font-size: 13px; color: #aaa; line-height: 1.5; margin-bottom: 18px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hh-btns  { display: flex; gap: 8px; }
+.hh-play  { display: flex; align-items: center; gap: 8px; background: #fff; color: #000; padding: 10px 22px; border-radius: 4px; font-size: 14px; font-weight: 700; border: none; cursor: pointer; }
+.hh-play:hover { background: rgba(255,255,255,0.85); }
+.hh-info  { display: flex; align-items: center; gap: 8px; background: rgba(109,109,110,0.5); color: #fff; padding: 10px 22px; border-radius: 4px; font-size: 14px; font-weight: 700; border: none; cursor: pointer; backdrop-filter: blur(4px); }
+
+.home-rows       { padding: 0 40px 40px; }
+.home-row        { margin-bottom: 32px; }
+.home-row-title  { font-size: 16px; font-weight: 700; color: #e5e5e5; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+.home-row-title .row-tag { font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); border: 1px solid rgba(229,9,20,0.4); padding: 2px 7px; border-radius: 3px; }
+.home-row-scroller { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.home-row-scroller::-webkit-scrollbar { display: none; }
+
+.hcard-land {
+  flex: 0 0 200px; height: 113px; border-radius: 4px; overflow: hidden;
+  position: relative; cursor: pointer;
+  transition: transform .2s, box-shadow .2s; background: #1a1a1a;
+}
+.hcard-land:hover { transform: scale(1.07) translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.8); z-index: 5; }
+.hcard-land-bg { position: absolute; inset: 0; }
+.hcard-land img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hcard-land-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 55%); padding: 8px; display: flex; flex-direction: column; justify-content: flex-end; }
+.hcard-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hcard-sub  { font-size: 10px; color: #999; margin-top: 1px; }
+.hcard-live-badge { position: absolute; top: 6px; left: 6px; background: var(--accent); font-size: 9px; font-weight: 700; letter-spacing: 1px; padding: 2px 5px; border-radius: 2px; text-transform: uppercase; }
+.hcard-progress { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.15); }
+.hcard-prog-fill { height: 100%; background: var(--accent); }
+
+.hcard-poster {
+  flex: 0 0 130px; height: 195px; border-radius: 4px; overflow: hidden;
+  position: relative; cursor: pointer;
+  transition: transform .2s, box-shadow .2s; background: #1a1a1a;
+}
+.hcard-poster:hover { transform: scale(1.07) translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.8); z-index: 5; }
+.hcard-poster-bg { position: absolute; inset: 0; }
+.hcard-poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hcard-poster-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%); padding: 10px 8px 8px; }
+.hcard-poster-name { font-size: 11px; font-weight: 600; }
+.hcard-poster-meta { font-size: 10px; color: #888; margin-top: 2px; }
+
+/* ── VIDEO SCREEN ─────────────────────────────────────────────── */
+#videoScreen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity .4s;
+}
+body.playing #videoScreen,
+body.loading #videoScreen { opacity: 1; pointer-events: all; }
+
+#videoArea { flex: 1; position: relative; background: #000; overflow: hidden; }
+video { width: 100%; height: 100%; display: block; background: #000; }
+
+/* Netflix ring spinner */
+#loadingOverlay {
+  position: absolute; inset: 0;
+  background: #000; display: none;
+  align-items: center; justify-content: center;
+}
+body.loading #loadingOverlay { display: flex; }
+.nf-spinner { width: 56px; height: 56px; position: relative; }
+.nf-spinner::before {
+  content: ''; position: absolute; inset: 0;
+  border-radius: 50%; border: 3px solid rgba(255,255,255,0.1);
+}
+.nf-spinner::after {
+  content: ''; position: absolute; inset: 0;
+  border-radius: 50%; border: 3px solid transparent;
+  border-top-color: #e50914;
+  border-right-color: rgba(229,9,20,0.35);
+  animation: nf-spin .9s cubic-bezier(.4,0,.2,1) infinite;
+}
+@keyframes nf-spin { to { transform: rotate(360deg); } }
+
+/* Now-playing info bar — bottom of video */
+#nowBar {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, transparent 100%);
+  padding: 48px 40px 20px;
+  opacity: 0; transition: opacity .3s;
+}
+body.playing #nowBar { opacity: 1; }
+.now-badge  { font-size: 11px; color: var(--accent); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.now-dot    { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1.5s infinite; }
+.now-title  { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+.now-track  { height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; max-width: 400px; }
+.now-fill   { height: 100%; background: var(--accent); border-radius: 2px; transition: width 1s linear; }
+
+/* EPG bar below video */
 #epgBar {
-  background: var(--surface); border-top: 1px solid var(--border);
-  height: 62px; padding: 0 16px;
+  background: #111; border-top: 1px solid #222;
+  height: 60px; padding: 0 20px;
   display: flex; align-items: center; gap: 16px;
   flex-shrink: 0; overflow: hidden;
 }
-.epg-chname {
-  font-size: 12px; font-weight: 700; color: var(--accent);
-  max-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0;
-}
-.epg-vdiv { width: 1px; height: 38px; background: var(--border); flex-shrink: 0; }
-.epg-slot { flex: 1; min-width: 0; }
-.epg-lbl  { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 2px; }
-.epg-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.epg-time  { font-size: 11px; color: var(--muted); }
-.epg-prog  { flex: 1.4; min-width: 80px; }
-.prog-track { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+.epg-chname { font-size: 12px; font-weight: 700; color: var(--accent); max-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+.epg-vdiv   { width: 1px; height: 36px; background: #2a2a2a; flex-shrink: 0; }
+.epg-slot   { flex: 1; min-width: 0; }
+.epg-lbl    { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+.epg-title  { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.epg-time   { font-size: 11px; color: var(--muted); }
+.epg-prog   { flex: 1.4; min-width: 80px; }
+.prog-track { height: 3px; background: #2a2a2a; border-radius: 2px; overflow: hidden; margin-top: 6px; }
 .prog-fill  { height: 100%; background: var(--accent); border-radius: 2px; min-width: 3px; transition: width 60s linear; }
 .prog-pct   { font-size: 10px; color: var(--muted); }
 
-/* ── Settings modal ──────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════
+   SETTINGS MODAL
+════════════════════════════════════════════════════════════ */
 .modal-bg {
-  position: fixed; inset: 0; background: rgba(0,0,0,.75);
-  backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center; z-index: 50;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.8); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
 }
 .modal-box {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 14px; padding: 28px;
-  width: 440px; max-width: calc(100vw - 32px);
+  background: #1a1a1a; border: 1px solid #2a2a2a;
+  border-radius: 10px; padding: 32px;
+  width: 460px; max-width: calc(100vw - 32px);
+  box-shadow: 0 16px 60px rgba(0,0,0,0.8);
 }
-.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 22px; }
-.field { margin-bottom: 15px; }
-.field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
-.field input {
-  width: 100%; height: 38px;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 6px; padding: 0 12px;
-  color: var(--text); font-size: 14px; outline: none;
-}
+.modal-title    { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.modal-subtitle { font-size: 13px; color: #777; margin-bottom: 24px; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 11px; color: #888; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px; }
+.field input { width: 100%; height: 42px; background: #222; border: 1px solid #333; border-radius: 4px; padding: 0 14px; color: #fff; font-size: 14px; outline: none; }
 .field input:focus { border-color: var(--accent); }
-.field-note { font-size: 11px; color: var(--muted); margin-top: 4px; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+.field-note { font-size: 11px; color: #666; margin-top: 5px; }
+.pi-status { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #222; border-radius: 4px; border: 1px solid #333; font-size: 13px; }
+.pi-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live); flex-shrink: 0; animation: pulse 2s infinite; }
+.pi-dot.offline { background: var(--err); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; align-items: center; }
+.modal-actions .divider { flex: 1; }
 
-/* ── Series info modal ───────────────────────────────────────────────────── */
+.btn { height: 38px; padding: 0 20px; border-radius: 4px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: filter .15s; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { filter: brightness(1.15); }
+.btn-red    { background: var(--accent); color: #fff; }
+.btn-ghost  { background: transparent; border: 1px solid #444; color: #aaa; }
+.btn-ghost:hover { border-color: #888; color: #fff; }
+.btn-reload { background: #2a2a2a; color: #ccc; border: 1px solid #3a3a3a; }
+
+/* ════════════════════════════════════════════════════════════
+   SERIES INFO MODAL
+════════════════════════════════════════════════════════════ */
 #seriesModal .modal-box {
-  width: 680px;
-  max-width: calc(100vw - 32px);
+  width: 700px; max-width: calc(100vw - 32px);
   max-height: calc(100vh - 48px);
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  overflow: hidden;
+  display: flex; flex-direction: column;
+  padding: 0; overflow: hidden; background: #141414;
 }
-.ser-modal-header {
-  display: flex;
-  gap: 18px;
-  padding: 22px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.ser-modal-cover {
-  width: 80px; height: 110px; border-radius: 6px;
-  object-fit: cover; background: var(--surface2); flex-shrink: 0;
-}
-.ser-modal-cover-fb {
-  width: 80px; height: 110px; border-radius: 6px;
-  background: var(--surface2); flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; font-size: 36px;
-}
-.ser-modal-meta { flex: 1; min-width: 0; }
-.ser-modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-.ser-modal-genre { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-.ser-modal-rating { font-size: 13px; color: var(--gold); margin-bottom: 8px; }
-.ser-modal-plot  { font-size: 12px; color: var(--muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.ser-modal-close { position: absolute; top: 14px; right: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; color: var(--muted); }
-.ser-modal-close:hover { color: var(--text); }
+.ser-modal-header { display: flex; gap: 20px; padding: 24px; border-bottom: 1px solid #222; flex-shrink: 0; }
+.ser-modal-cover    { width: 80px; height: 110px; border-radius: 6px; object-fit: cover; background: #2a2a2a; flex-shrink: 0; }
+.ser-modal-cover-fb { width: 80px; height: 110px; border-radius: 6px; background: #2a2a2a; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+.ser-modal-meta   { flex: 1; min-width: 0; }
+.ser-modal-title  { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.ser-modal-genre  { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.ser-modal-rating { font-size: 14px; color: var(--gold); margin-bottom: 10px; }
+.ser-modal-plot   { font-size: 13px; color: var(--muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ser-modal-close  { position: absolute; top: 14px; right: 14px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; color: var(--muted); }
+.ser-modal-close:hover { color: var(--text); background: #333; }
 
-.season-tabs { display: flex; gap: 4px; padding: 10px 22px; border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; }
-.season-btn { padding: 4px 12px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); font-size: 12px; cursor: pointer; white-space: nowrap; transition: all .15s; }
-.season-btn:hover  { color: var(--text); border-color: var(--accent); }
+.season-tabs { display: flex; gap: 6px; padding: 12px 24px; border-bottom: 1px solid #222; flex-shrink: 0; overflow-x: auto; }
+.season-btn { padding: 5px 14px; border-radius: 20px; background: #2a2a2a; border: 1px solid #3a3a3a; color: var(--muted); font-size: 12px; cursor: pointer; white-space: nowrap; transition: all .15s; }
+.season-btn:hover  { color: var(--text); border-color: #666; }
 .season-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 .episode-list { flex: 1; overflow-y: auto; padding: 8px 0; }
-.ep-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 9px 22px; cursor: pointer; transition: background .1s;
-  border-bottom: 1px solid var(--border);
-}
-.ep-item:hover { background: var(--surface2); }
-.ep-num { font-size: 12px; color: var(--muted); min-width: 28px; text-align: right; flex-shrink: 0; }
-.ep-thumb {
-  width: 64px; height: 36px; border-radius: 3px;
-  object-fit: cover; background: var(--surface2); flex-shrink: 0;
-}
-.ep-thumb-fb {
-  width: 64px; height: 36px; border-radius: 3px;
-  background: var(--surface2); flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; font-size: 14px;
-}
+.ep-item { display: flex; align-items: center; gap: 14px; padding: 10px 24px; cursor: pointer; transition: background .1s; border-bottom: 1px solid #1e1e1e; }
+.ep-item:hover { background: #1e1e1e; }
+.ep-num   { font-size: 12px; color: #555; min-width: 28px; text-align: right; flex-shrink: 0; }
+.ep-thumb    { width: 64px; height: 36px; border-radius: 4px; object-fit: cover; background: #2a2a2a; flex-shrink: 0; }
+.ep-thumb-fb { width: 64px; height: 36px; border-radius: 4px; background: #2a2a2a; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; }
 .ep-info  { flex: 1; min-width: 0; }
 .ep-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ep-dur   { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.ep-play  { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); border: none; color: #fff; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.ep-play:hover { opacity: .85; }
+.ep-play  { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); border: none; color: #fff; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ep-play:hover { filter: brightness(1.15); }
 .ser-loading { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 32px; color: var(--muted); font-size: 13px; }
 
-/* ── Toast ───────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════════════════════ */
 #toast {
-  position: fixed; bottom: 78px; left: 50%;
+  position: fixed; bottom: 80px; left: 50%;
   transform: translateX(-50%) translateY(8px);
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 8px; padding: 9px 18px;
+  background: #1f1f1f; border: 1px solid #333;
+  border-radius: 6px; padding: 10px 20px;
   font-size: 13px; opacity: 0; pointer-events: none;
-  transition: opacity .2s, transform .2s; z-index: 99; white-space: nowrap;
+  transition: opacity .2s, transform .2s; z-index: 300; white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 #toast.ok   { border-color: var(--live); color: var(--live); }
 #toast.err  { border-color: var(--err);  color: var(--err);  }
 
-/* ── Spinner ─────────────────────────────────────────────────────────────── */
-.spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .65s linear infinite; flex-shrink: 0; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading-row { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 28px 16px; color: var(--muted); font-size: 13px; }
-
-/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════
+   SCROLLBAR
+════════════════════════════════════════════════════════════ */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 </style>
 </head>
 <body>
 
-<!-- ── Topbar ──────────────────────────────────────────────────────────────── -->
-<div id="topbar">
-  <div class="logo">IPTV<em>.</em></div>
-  <input type="text" id="searchInput" placeholder="Search…" autocomplete="off" oninput="onSearch()">
-  <div class="spacer"></div>
-  <button class="btn btn-ghost" onclick="showSettings()">⚙ Settings</button>
-  <button class="btn btn-primary" id="loadBtn" onclick="loadCurrent()">Load</button>
+<!-- ══════════════════════════════════════════════════
+     LEFT ICON RAIL
+══════════════════════════════════════════════════ -->
+<div id="rail">
+  <div class="rail-logo">IPTV<span style="color:#fff">·</span></div>
+
+  <!-- Search -->
+  <div class="rail-item" id="rail-search" onclick="toggleSearch()">
+    <div class="rail-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
+      </svg>
+    </div>
+    <span class="rail-label">Search</span>
+  </div>
+
+  <!-- Home -->
+  <div class="rail-item" id="rail-home" onclick="openHome()">
+    <div class="rail-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/>
+        <polyline points="9,21 9,12 15,12 15,21"/>
+      </svg>
+    </div>
+    <span class="rail-label">Home</span>
+  </div>
+
+  <!-- Live TV -->
+  <div class="rail-item" id="rail-live" onclick="openPanel('live')">
+    <div class="rail-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="7" width="20" height="14" rx="2"/>
+        <polyline points="17 2 12 7 7 2"/>
+      </svg>
+    </div>
+    <span class="rail-label">Live TV</span>
+  </div>
+
+  <!-- Movies -->
+  <div class="rail-item" id="rail-vod" onclick="openPanel('vod')">
+    <div class="rail-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="2"/>
+        <line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/>
+        <line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/>
+        <line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/>
+      </svg>
+    </div>
+    <span class="rail-label">Movies</span>
+  </div>
+
+  <!-- Series -->
+  <div class="rail-item" id="rail-series" onclick="openPanel('series')">
+    <div class="rail-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="9" height="9" rx="1.5"/><rect x="13" y="2" width="9" height="9" rx="1.5"/>
+        <rect x="2" y="13" width="9" height="9" rx="1.5"/><rect x="13" y="13" width="9" height="9" rx="1.5"/>
+      </svg>
+    </div>
+    <span class="rail-label">Series</span>
+  </div>
+
+  <div class="rail-spacer"></div>
+
+  <!-- Settings -->
+  <div class="rail-item" id="rail-settings" onclick="openSettings()">
+    <div class="rail-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </div>
+    <span class="rail-label">Settings</span>
+  </div>
 </div>
 
-<!-- ── Main layout ─────────────────────────────────────────────────────────── -->
-<div id="layout">
-  <div id="sidebar">
+<!-- ══════════════════════════════════════════════════
+     SLIDE-OUT PANEL
+══════════════════════════════════════════════════ -->
+<div id="panel">
 
-    <!-- Mode switcher -->
-    <div id="modeSwitch">
-      <button class="mode-btn active" data-mode="live"   onclick="switchMode('live')">📺 Live TV</button>
-      <button class="mode-btn"        data-mode="vod"    onclick="switchMode('vod')">🎬 Movies</button>
-      <button class="mode-btn"        data-mode="series" onclick="switchMode('series')">📺 Series</button>
+  <!-- Channel Panel -->
+  <div id="channelPanel">
+    <div class="panel-header">
+      <div class="panel-title" id="panelTitle">Live TV</div>
     </div>
-
-    <!-- Category strip -->
-    <div id="catStrip">
-      <button class="cat-btn active" data-id="all" onclick="selectCat('all')">All</button>
-    </div>
-
+    <div id="catStrip"></div>
     <div id="chCount"></div>
     <div id="channelList">
       <div class="ch-empty">
         <div class="icon">📺</div>
-        <div>No content loaded</div>
-        <div>Configure Settings then click Load</div>
+        <div>Select a category from the left</div>
       </div>
     </div>
   </div>
 
-  <!-- Player -->
-  <div id="playerWrap">
+  <!-- Search Panel -->
+  <div id="searchPanel">
+    <div class="panel-header">
+      <div class="panel-title">Search</div>
+      <div class="panel-search">
+        <span class="panel-search-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
+          </svg>
+        </span>
+        <input type="text" id="globalSearch" placeholder="Movies, channels, series…" oninput="runSearch(this.value)" autocomplete="off">
+      </div>
+    </div>
+    <div class="search-filters">
+      <button class="sf-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="sf-btn" onclick="setFilter('live',this)">Live</button>
+      <button class="sf-btn" onclick="setFilter('movie',this)">Movies</button>
+      <button class="sf-btn" onclick="setFilter('series',this)">Series</button>
+    </div>
+    <div id="searchResults">
+      <div style="padding:32px 16px;text-align:center;color:#555;font-size:13px">
+        Start typing to search across all content…
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     MAIN AREA
+══════════════════════════════════════════════════ -->
+<div id="main">
+
+  <!-- HOME SCREEN -->
+  <div id="homeScreen">
+    <div id="homeHero">
+      <div id="homeHeroBg"></div>
+      <div id="homeHeroContent">
+        <div class="hh-badge"><div class="hh-dot"></div>Live Now · Sports</div>
+        <div class="hh-title" id="homeHeroTitle">Welcome Back</div>
+        <div class="hh-desc" id="homeHeroDesc">Select Live TV, Movies or Series from the left to start watching</div>
+        <div class="hh-btns">
+          <button class="hh-play" onclick="openPanel('live')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="black"><polygon points="5,3 19,12 5,21"/></svg>
+            Live TV
+          </button>
+          <button class="hh-info" onclick="openSettings()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="home-rows">
+      <!-- Live TV row (populated dynamically) -->
+      <div class="home-row" id="homeRowLive" style="display:none">
+        <div class="home-row-title">Live TV <span class="row-tag">LIVE</span></div>
+        <div class="home-row-scroller" id="homeRowLiveScroller"></div>
+      </div>
+      <!-- Movies row (populated dynamically) -->
+      <div class="home-row" id="homeRowMovies" style="display:none">
+        <div class="home-row-title">Movies</div>
+        <div class="home-row-scroller" id="homeRowMoviesScroller"></div>
+      </div>
+      <!-- Series row (populated dynamically) -->
+      <div class="home-row" id="homeRowSeries" style="display:none">
+        <div class="home-row-title">Series</div>
+        <div class="home-row-scroller" id="homeRowSeriesScroller"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BROWSE SCREEN (idle / no video) -->
+  <div id="browseScreen">
+    <div id="hero">
+      <div id="heroBg"></div>
+      <div id="heroContent">
+        <div class="hero-badge">
+          <div class="hero-badge-icon">
+            <svg viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16" fill="#e50914"/></svg>
+          </div>
+          <span class="hero-badge-text" id="heroBadgeText">Select Content</span>
+        </div>
+        <div class="hero-title" id="heroTitle">IPTV Player</div>
+        <div class="hero-desc"  id="heroDesc">Choose Live TV, Movies or Series from the left panel to start watching.</div>
+        <div class="hero-actions">
+          <button class="hero-btn-play" onclick="openPanel('live')">
+            <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+            Live TV
+          </button>
+          <button class="hero-btn-info" onclick="openSettings()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Settings
+          </button>
+        </div>
+      </div>
+      <div class="hero-rating" id="heroRating"></div>
+    </div>
+
+    <!-- Bottom thumbnail row -->
+    <div id="thumbRow">
+      <div class="thumb-row-title" id="thumbRowTitle">Recently Played</div>
+      <div class="thumb-scroller" id="thumbScroller">
+        <!-- populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- VIDEO SCREEN -->
+  <div id="videoScreen">
     <div id="videoArea">
-      <video id="player" controls playsinline></video>
-      <div id="overlay">
-        <div class="ov-icon">📺</div>
-        <div class="ov-text">Select something to watch</div>
-        <div class="ov-sub" id="overlayStatus"></div>
+      <video id="player" playsinline></video>
+
+      <!-- Loading overlay (spinner) -->
+      <div id="loadingOverlay">
+        <div class="nf-spinner"></div>
+      </div>
+
+      <!-- Now-playing bar -->
+      <div id="nowBar">
+        <div class="now-badge"><div class="now-dot"></div> <span id="nowChBadge">—</span></div>
+        <div class="now-title" id="nowProgTitle">—</div>
+        <div class="now-track"><div class="now-fill" id="nowProgFill" style="width:0%"></div></div>
       </div>
     </div>
 
     <!-- EPG bar -->
     <div id="epgBar">
       <div class="epg-chname" id="epgChName">—</div>
+      <div class="epg-vdiv"></div>
       <div class="epg-slot">
         <div class="epg-lbl">Now Playing</div>
         <div class="epg-title" id="epgNowTitle">—</div>
@@ -474,12 +828,16 @@ video { width: 100%; height: 100%; display: block; background: #000; }
       </div>
     </div>
   </div>
+
 </div>
 
-<!-- ── Settings modal ──────────────────────────────────────────────────────── -->
+<!-- ══════════════════════════════════════════════════
+     SETTINGS MODAL
+══════════════════════════════════════════════════ -->
 <div class="modal-bg" id="settingsModal" style="display:none" onclick="onModalBg(event)">
   <div class="modal-box">
-    <div class="modal-title">⚙ Server Configuration</div>
+    <div class="modal-title">Settings</div>
+    <div class="modal-subtitle">Configure your IPTV server connection</div>
     <div class="field">
       <label>Server URL</label>
       <input type="text" id="cfgServer" placeholder="http://iptv-server.com:8080" autocomplete="off">
@@ -494,18 +852,25 @@ video { width: 100%; height: 100%; display: block; background: #000; }
       <div class="field-note">🔒 Password is saved for this browser session only, cleared when you close the tab.</div>
     </div>
     <div class="field">
-      <label>Raspberry Pi Tunnel <span style="color:var(--muted);font-weight:400">(auto-managed)</span></label>
-      <div id="piStatus" style="padding:8px 12px;border-radius:8px;background:var(--surface2);font-size:13px;color:var(--muted)">Checking…</div>
-      <div class="field-note">🍓 Your Pi proxy URL is fetched automatically on load. Keep the Pi powered on and connected to your home network.</div>
+      <label>Raspberry Pi Tunnel <span style="color:var(--muted);font-weight:400;text-transform:none">(auto-managed)</span></label>
+      <div id="piStatus" class="pi-status">
+        <div class="pi-dot offline" id="piDot"></div>
+        <span id="piStatusText" style="font-size:13px;color:var(--muted)">Checking…</span>
+      </div>
+      <div class="field-note">🍓 Your Pi proxy URL is fetched automatically. Keep the Pi powered on and connected.</div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="hideSettings()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveSettings()">Save &amp; Load</button>
+      <button class="btn btn-reload" onclick="reloadContent()">↺ Reload Content</button>
+      <div class="divider"></div>
+      <button class="btn btn-ghost" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-red" onclick="saveSettings()">Save &amp; Apply</button>
     </div>
   </div>
 </div>
 
-<!-- ── Series info modal ────────────────────────────────────────────────────── -->
+<!-- ══════════════════════════════════════════════════
+     SERIES INFO MODAL
+══════════════════════════════════════════════════ -->
 <div class="modal-bg" id="seriesModal" style="display:none" onclick="onSeriesModalBg(event)">
   <div class="modal-box" style="position:relative">
     <button class="ser-modal-close" onclick="hideSeriesModal()">✕</button>
@@ -520,14 +885,16 @@ video { width: 100%; height: 100%; display: block; background: #000; }
         <div class="ser-modal-plot"   id="serPlot"></div>
       </div>
     </div>
-    <div class="season-tabs" id="seasonTabs"></div>
+    <div class="season-tabs"  id="seasonTabs"></div>
     <div class="episode-list" id="episodeList"></div>
   </div>
 </div>
 
 <div id="toast"></div>
 
-<!-- ── App ─────────────────────────────────────────────────────────────────── -->
+<!-- ══════════════════════════════════════════════════
+     APP SCRIPT
+══════════════════════════════════════════════════ -->
 <script>
 'use strict';
 
@@ -535,22 +902,22 @@ video { width: 100%; height: 100%; display: block; background: #000; }
 const S = {
   cfg:      loadCfg(),
   password: sessionStorage.getItem('iptv_pass') || '',
-  mode:     'live',   // 'live' | 'vod' | 'series'
+  mode:     'live',
   activeCat: 'all',
   query:    '',
   currentCh: null,
 
-  // Per-mode caches
   live:   { cats: [], items: [], loaded: false },
   vod:    { cats: [], items: [], loaded: false },
   series: { cats: [], items: [], loaded: false },
 
-  // Series detail
-  seriesInfo: null,
+  seriesInfo:   null,
   activeSeason: null,
+  hls:          null,
+  epgTimer:     null,
 
-  hls:      null,
-  epgTimer: null,
+  searchFilter: 'all',
+  recentlyPlayed: [],
 };
 
 function modeData() { return S[S.mode]; }
@@ -568,7 +935,7 @@ function saveCfg() {
   }));
 }
 
-// ─── Auto-fetch Pi tunnel URL from Cloudflare Worker registry ─────────────────
+// ─── Pi tunnel ────────────────────────────────────────────────────────────────
 const TUNNEL_REGISTRY = 'https://iptv-tunnel.ahmadashwah.workers.dev/';
 
 async function refreshTunnelUrl() {
@@ -579,18 +946,15 @@ async function refreshTunnelUrl() {
     if (url && url.startsWith('https://') && url !== S.cfg.liveProxy) {
       S.cfg.liveProxy = url;
       saveCfg();
-      console.log('[tunnel] Updated proxy URL:', url);
     }
-  } catch { /* offline or Pi not running — keep last known URL */ }
+  } catch { /* offline or Pi not running */ }
 }
 
 // ─── Proxy ────────────────────────────────────────────────────────────────────
-// All requests route through the Pi tunnel (S.cfg.liveProxy).
-// Falls back to a relative /proxy path for local dev or if tunnel not yet loaded.
 function px(url) {
   if (window.location.protocol === 'file:') return url;
   if (S.cfg?.liveProxy) return `${S.cfg.liveProxy}/proxy?url=${encodeURIComponent(url)}`;
-  return '/proxy?url=' + encodeURIComponent(url); // local dev / Railway fallback
+  return '/proxy?url=' + encodeURIComponent(url);
 }
 
 // ─── Xtream API ───────────────────────────────────────────────────────────────
@@ -604,25 +968,59 @@ async function xtream(action, params = {}) {
   return r.json();
 }
 
-// ─── Mode switching ───────────────────────────────────────────────────────────
-function switchMode(mode) {
-  S.mode = mode;
+// ─── Rail / Panel navigation ──────────────────────────────────────────────────
+function openHome() {
+  document.body.classList.add('home');
+  document.body.classList.remove('panel-open', 'search-open');
+  setRailActive('home');
+}
+
+function openPanel(mode) {
+  S.mode     = mode;
   S.activeCat = 'all';
-  S.query = '';
-  id('searchInput').value = '';
-  document.querySelectorAll('.mode-btn').forEach(b =>
-    b.classList.toggle('active', b.getAttribute('data-mode') === mode));
+  S.query    = '';
+  document.body.classList.add('panel-open');
+  document.body.classList.remove('search-open', 'home');
+  setRailActive(mode);
+  const titles = { live: 'Live TV', vod: 'Movies', series: 'Series' };
+  id('panelTitle').textContent = titles[mode] || mode;
   loadCurrent();
 }
 
+function toggleSearch() {
+  const open = document.body.classList.contains('search-open');
+  if (open) {
+    document.body.classList.remove('search-open');
+    setRailActive(null);
+  } else {
+    document.body.classList.add('search-open');
+    document.body.classList.remove('panel-open', 'home');
+    setRailActive('search');
+    setTimeout(() => { const gs = id('globalSearch'); if (gs) gs.focus(); }, 300);
+  }
+}
+
+function setRailActive(key) {
+  document.querySelectorAll('.rail-item').forEach(r => r.classList.remove('active'));
+  if (key) {
+    const el = id('rail-' + key);
+    if (el) el.classList.add('active');
+  }
+}
+
+// Rail hover expand
+id('rail').addEventListener('mouseenter', () => id('rail').classList.add('expanded'));
+id('rail').addEventListener('mouseleave', () => id('rail').classList.remove('expanded'));
+
+// ─── Load content ─────────────────────────────────────────────────────────────
 async function loadCurrent() {
-  await refreshTunnelUrl();   // silently pull latest Pi tunnel URL before doing anything
-  if (!S.cfg.server || !S.cfg.username || !S.password) { showSettings(); return; }
+  await refreshTunnelUrl();
+  if (!S.cfg.server || !S.cfg.username || !S.password) { openSettings(); return; }
   const data = modeData();
   if (data.loaded) { renderCats(); applyFilter(); return; }
 
-  const btn = id('loadBtn');
-  btn.disabled = true; btn.textContent = 'Loading…';
+  const titles = { live: 'Live TV', vod: 'Movies', series: 'Series' };
+  id('panelTitle').textContent = 'Loading…';
   setList('<div class="loading-row"><div class="spinner"></div>Loading…</div>');
 
   try {
@@ -630,46 +1028,96 @@ async function loadCurrent() {
     if (S.mode === 'vod')    await loadVOD();
     if (S.mode === 'series') await loadSeries();
     data.loaded = true;
+    id('panelTitle').textContent = titles[S.mode];
     renderCats();
     applyFilter();
     const label = S.mode === 'live' ? 'channels' : S.mode === 'vod' ? 'movies' : 'series';
     toast(`Loaded ${data.items.length.toLocaleString()} ${label}`, 'ok');
+    refreshHomeRows();
   } catch (e) {
+    id('panelTitle').textContent = titles[S.mode] || S.mode;
     toast(e.message, 'err');
     setList(`<div class="ch-empty"><div class="icon">⚠</div><div>${esc(e.message)}</div></div>`);
-  } finally {
-    btn.disabled = false; btn.textContent = 'Reload';
   }
 }
 
 async function loadLive() {
-  const [cats, items] = await Promise.all([
-    xtream('get_live_categories'),
-    xtream('get_live_streams'),
-  ]);
+  const [cats, items] = await Promise.all([xtream('get_live_categories'), xtream('get_live_streams')]);
   S.live.cats  = Array.isArray(cats)  ? cats  : [];
   S.live.items = Array.isArray(items) ? items : [];
 }
-
 async function loadVOD() {
-  const [cats, items] = await Promise.all([
-    xtream('get_vod_categories'),
-    xtream('get_vod_streams'),
-  ]);
+  const [cats, items] = await Promise.all([xtream('get_vod_categories'), xtream('get_vod_streams')]);
   S.vod.cats  = Array.isArray(cats)  ? cats  : [];
   S.vod.items = Array.isArray(items) ? items : [];
 }
-
 async function loadSeries() {
-  const [cats, items] = await Promise.all([
-    xtream('get_series_categories'),
-    xtream('get_series'),
-  ]);
+  const [cats, items] = await Promise.all([xtream('get_series_categories'), xtream('get_series')]);
   S.series.cats  = Array.isArray(cats)  ? cats  : [];
   S.series.items = Array.isArray(items) ? items : [];
 }
 
-// ─── Categories ──────────────────────────────────────────────────────────────
+// ─── Home screen rows ─────────────────────────────────────────────────────────
+function refreshHomeRows() {
+  // Live row
+  if (S.live.loaded && S.live.items.length) {
+    const scroller = id('homeRowLiveScroller');
+    scroller.innerHTML = '';
+    S.live.items.slice(0, 12).forEach((ch, i) => {
+      const card = document.createElement('div');
+      card.className = 'hcard-land tc' + ((i % 8) + 1);
+      card.innerHTML = `
+        ${ch.stream_icon ? `<img src="${esc(ch.stream_icon)}" alt="" onerror="this.style.display='none'">` : ''}
+        <div class="hcard-live-badge">Live</div>
+        <div class="hcard-land-overlay">
+          <div class="hcard-name">${esc(ch.name)}</div>
+          <div class="hcard-sub">Live TV</div>
+        </div>`;
+      card.onclick = () => { openPanel('live'); setTimeout(() => playLive(ch), 100); };
+      scroller.appendChild(card);
+    });
+    id('homeRowLive').style.display = '';
+  }
+  // Movies row
+  if (S.vod.loaded && S.vod.items.length) {
+    const scroller = id('homeRowMoviesScroller');
+    scroller.innerHTML = '';
+    S.vod.items.slice(0, 12).forEach((m, i) => {
+      const card = document.createElement('div');
+      card.className = 'hcard-poster tc' + ((i % 8) + 1);
+      const year = m.year || '';
+      card.innerHTML = `
+        ${m.stream_icon ? `<img src="${esc(m.stream_icon)}" alt="" onerror="this.style.display='none'">` : ''}
+        <div class="hcard-poster-overlay">
+          <div class="hcard-poster-name">${esc(m.name)}</div>
+          <div class="hcard-poster-meta">${year ? year + ' · ' : ''}${m.genre || 'Movie'}</div>
+        </div>`;
+      card.onclick = () => { openPanel('vod'); setTimeout(() => playVOD(m), 100); };
+      scroller.appendChild(card);
+    });
+    id('homeRowMovies').style.display = '';
+  }
+  // Series row
+  if (S.series.loaded && S.series.items.length) {
+    const scroller = id('homeRowSeriesScroller');
+    scroller.innerHTML = '';
+    S.series.items.slice(0, 12).forEach((s, i) => {
+      const card = document.createElement('div');
+      card.className = 'hcard-poster tc' + ((i % 8) + 1);
+      card.innerHTML = `
+        ${s.cover ? `<img src="${esc(s.cover)}" alt="" onerror="this.style.display='none'">` : ''}
+        <div class="hcard-poster-overlay">
+          <div class="hcard-poster-name">${esc(s.name)}</div>
+          <div class="hcard-poster-meta">${s.genre || 'Series'}${s.rating ? ' · ★' + parseFloat(s.rating).toFixed(1) : ''}</div>
+        </div>`;
+      card.onclick = () => openSeries(s);
+      scroller.appendChild(card);
+    });
+    id('homeRowSeries').style.display = '';
+  }
+}
+
+// ─── Categories ───────────────────────────────────────────────────────────────
 function renderCats() {
   const strip = id('catStrip');
   strip.innerHTML = '';
@@ -692,10 +1140,6 @@ function selectCat(catId) {
 }
 
 // ─── Filter ───────────────────────────────────────────────────────────────────
-function onSearch() {
-  S.query = id('searchInput').value.trim().toLowerCase();
-  applyFilter();
-}
 function applyFilter() {
   let list = modeData().items;
   if (S.activeCat !== 'all') list = list.filter(c => String(c.category_id) === S.activeCat);
@@ -706,7 +1150,76 @@ function applyFilter() {
   renderItems(list);
 }
 
-// ─── Render ───────────────────────────────────────────────────────────────────
+// ─── Global Search ────────────────────────────────────────────────────────────
+let _searchFilter = 'all';
+
+function setFilter(f, btn) {
+  _searchFilter = f;
+  document.querySelectorAll('.sf-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  runSearch(id('globalSearch').value);
+}
+
+function runSearch(q) {
+  const results = id('searchResults');
+  if (!q.trim()) {
+    results.innerHTML = '<div style="padding:32px 16px;text-align:center;color:#555;font-size:13px">Start typing to search across all content…</div>';
+    return;
+  }
+  const lower = q.toLowerCase();
+  const liveItems = (_searchFilter === 'all' || _searchFilter === 'live')
+    ? S.live.items.filter(i => (i.name || '').toLowerCase().includes(lower)).slice(0, 20)
+    : [];
+  const vodItems  = (_searchFilter === 'all' || _searchFilter === 'movie')
+    ? S.vod.items.filter(i => (i.name || '').toLowerCase().includes(lower)).slice(0, 20)
+    : [];
+  const serItems  = (_searchFilter === 'all' || _searchFilter === 'series')
+    ? S.series.items.filter(i => (i.name || '').toLowerCase().includes(lower)).slice(0, 20)
+    : [];
+  const all = [...liveItems, ...vodItems, ...serItems];
+
+  if (!liveItems.length && !vodItems.length && !serItems.length &&
+      !S.live.loaded && !S.vod.loaded && !S.series.loaded) {
+    results.innerHTML = '<div style="padding:32px 16px;text-align:center;color:#555;font-size:13px">Load content first — click Live TV, Movies or Series.</div>';
+    return;
+  }
+  if (!all.length) {
+    results.innerHTML = `<div style="padding:32px 16px;text-align:center;color:#555;font-size:13px">No results for "${esc(q)}"</div>`;
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+  liveItems.forEach(ch => frag.appendChild(makeSearchRow(ch, 'live')));
+  vodItems.forEach(m => frag.appendChild(makeSearchRow(m, 'movie')));
+  serItems.forEach(s => frag.appendChild(makeSearchRow(s, 'series')));
+  results.innerHTML = '';
+  results.appendChild(frag);
+}
+
+function makeSearchRow(item, type) {
+  const el = document.createElement('div');
+  el.className = 'search-result-row';
+  const name = item.name || item.title || '';
+  const logoUrl = item.stream_icon || item.cover || '';
+  const logoHtml = logoUrl
+    ? `<img style="width:36px;height:36px;border-radius:4px;object-fit:cover;background:#2a2a2a;flex-shrink:0" src="${esc(logoUrl)}" alt="" onerror="this.style.display='none'">`
+    : `<div style="width:36px;height:36px;border-radius:4px;background:#2a2a2a;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">${type==='live'?'📺':type==='movie'?'🎬':'🎭'}</div>`;
+  const badgeClass = type === 'live' ? 'sr-type-live' : type === 'movie' ? 'sr-type-movie' : 'sr-type-series';
+  const badgeText  = type === 'live' ? 'Live' : type === 'movie' ? 'Movie' : 'Series';
+  el.innerHTML = `
+    ${logoHtml}
+    <div class="ch-info">
+      <div class="ch-name">${esc(name)}</div>
+      <div class="ch-prog">${type === 'live' ? 'Live Channel' : type === 'movie' ? (item.year || '') : (item.genre || '')}</div>
+    </div>
+    <span class="sr-type-badge ${badgeClass}">${badgeText}</span>`;
+  if (type === 'live')   el.onclick = () => { document.body.classList.remove('search-open'); setRailActive(null); playLive(item); };
+  if (type === 'movie')  el.onclick = () => { document.body.classList.remove('search-open'); setRailActive(null); playVOD(item); };
+  if (type === 'series') el.onclick = () => openSeries(item);
+  return el;
+}
+
+// ─── Render items ─────────────────────────────────────────────────────────────
 function renderItems(items) {
   id('chCount').textContent = items.length ? `${items.length.toLocaleString()} items` : '';
   if (!items.length) {
@@ -737,8 +1250,7 @@ function makeLiveEl(ch) {
       <div class="ch-name">${esc(ch.name)}</div>
       <div class="ch-prog" id="cprog-${ch.stream_id}">—</div>
     </div>
-    ${isActive ? '<div class="live-dot"></div>' : ''}
-  `;
+    ${isActive ? '<div class="live-dot"></div>' : ''}`;
   el.onclick = () => playLive(ch);
   return el;
 }
@@ -750,16 +1262,15 @@ function makeVodEl(m) {
   el.setAttribute('data-sid', m.stream_id);
   const posterHtml = m.stream_icon ? `<img class="vod-poster" src="${esc(m.stream_icon)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
   const fbStyle    = m.stream_icon ? 'style="display:none"' : '';
-  const year    = m.year || (m.added ? new Date(m.added * 1000).getFullYear() : '');
-  const rating  = m.rating ? `<span class="vod-rating">★ ${parseFloat(m.rating).toFixed(1)}</span>` : '';
+  const year   = m.year || (m.added ? new Date(m.added * 1000).getFullYear() : '');
+  const rating = m.rating ? `<span class="vod-rating">★ ${parseFloat(m.rating).toFixed(1)}</span>` : '';
   el.innerHTML = `
     ${posterHtml}
     <div class="vod-poster-fb" ${fbStyle}>🎬</div>
     <div class="vod-info">
       <div class="vod-title">${esc(m.name)}</div>
       <div class="vod-meta">${year ? `<span>${year}</span>` : ''}${rating}</div>
-    </div>
-  `;
+    </div>`;
   el.onclick = () => playVOD(m);
   return el;
 }
@@ -778,8 +1289,7 @@ function makeSerEl(s) {
       <div class="ser-title">${esc(s.name)}</div>
       <div class="ser-meta">${esc(s.genre || '')}${rating ? ' · ' + rating : ''}</div>
     </div>
-    <span class="ser-arrow">›</span>
-  `;
+    <span class="ser-arrow">›</span>`;
   el.onclick = () => openSeries(s);
   return el;
 }
@@ -787,6 +1297,48 @@ function makeSerEl(s) {
 function setList(html) {
   id('channelList').innerHTML = html;
   id('chCount').textContent   = '';
+}
+
+// ─── Browse screen hero update ────────────────────────────────────────────────
+function updateBrowseHero(ch) {
+  const logoUrl = ch.stream_icon || ch.cover || '';
+  if (logoUrl) {
+    id('heroBg').style.backgroundImage =
+      `linear-gradient(105deg,rgba(10,10,10,1) 0%,rgba(10,10,10,0.55) 40%,transparent 70%),` +
+      `linear-gradient(to top,rgba(10,10,10,1) 0%,rgba(10,10,10,0.3) 30%,transparent 60%),url(${logoUrl})`;
+    id('heroBg').style.backgroundSize = 'auto,auto,cover';
+    id('heroBg').style.backgroundPosition = 'center,center,center';
+  }
+  id('heroTitle').textContent = ch.name || '—';
+  const mode = S.mode;
+  id('heroBadgeText').textContent = mode === 'live' ? 'Live · TV' : mode === 'vod' ? 'Movie' : 'Series';
+  id('heroDesc').textContent = ch.plot || ch.genre || '';
+
+  // Update thumb row with siblings
+  const items = modeData().items;
+  const idx = items.findIndex(i => (i.stream_id || i.series_id) === (ch.stream_id || ch.series_id));
+  const nearby = items.slice(Math.max(0, idx - 2), idx + 10).filter(i => i !== ch);
+  const scroller = id('thumbScroller');
+  id('thumbRowTitle').textContent = mode === 'live' ? 'Live Channels' : mode === 'vod' ? 'More Movies' : 'More Series';
+  scroller.innerHTML = '';
+  if (nearby.length) id('thumbRow').classList.add('has-items');
+  nearby.slice(0, 10).forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'thumb-card tc' + ((i % 8) + 1);
+    const logoH = (item.stream_icon || item.cover) ? `<img src="${esc(item.stream_icon || item.cover)}" alt="" onerror="this.style.display='none'">` : '';
+    card.innerHTML = `
+      <div class="thumb-card-bg"></div>
+      ${logoH}
+      ${mode === 'live' ? '<div class="thumb-live-badge">Live</div>' : ''}
+      <div class="thumb-card-overlay">
+        <div class="thumb-card-name">${esc(item.name || '')}</div>
+        <div class="thumb-card-sub">${mode === 'live' ? 'Live TV' : item.genre || ''}</div>
+      </div>`;
+    if (mode === 'live')   card.onclick = () => playLive(item);
+    if (mode === 'vod')    card.onclick = () => playVOD(item);
+    if (mode === 'series') card.onclick = () => openSeries(item);
+    scroller.appendChild(card);
+  });
 }
 
 // ─── Play Live ────────────────────────────────────────────────────────────────
@@ -802,8 +1354,8 @@ function playLive(ch) {
   const activeEl = document.querySelector('.ch-item.active');
   if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
 
-  id('overlayStatus').textContent = 'Connecting…';
-  id('overlay').style.display = 'flex';
+  setVideoLoading();
+  updateBrowseHero(ch);
 
   const { server, username } = S.cfg;
   const base = server.replace(/\/+$/, '');
@@ -811,11 +1363,6 @@ function playLive(ch) {
     ? ch.direct_source
     : `${base}/live/${username}/${S.password}/${ch.stream_id}.m3u8`;
 
-  // Route the live stream URL through the right proxy:
-  // • Pi tunnel (liveProxy set): pass tunnel URL directly — hls.js fetches it via HTTPS,
-  //   and root-relative /proxy?url=... segment paths in the manifest resolve correctly.
-  // • No Pi tunnel (HTTPS): raw URL stays, custom loader wraps it in allorigins.win.
-  // • Local HTTP dev: route through Railway proxy as before.
   let hlsUrl;
   if (window.location.protocol !== 'https:') {
     hlsUrl = px(streamUrl);
@@ -838,22 +1385,21 @@ function playVOD(m) {
   const activeEl = document.querySelector('.vod-item.active');
   if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
 
-  id('overlayStatus').textContent = 'Loading…';
-  id('overlay').style.display = 'flex';
+  setVideoLoading();
+  updateBrowseHero(m);
 
   const { server, username } = S.cfg;
   const base = server.replace(/\/+$/, '');
-  const ext  = m.container_extension || 'mp4';
-  // The IPTV server blocks datacenter IPs (Railway) for movie files too.
-  // Route through the Pi tunnel when available, else fall back to Railway proxy.
+  const ext   = m.container_extension || 'mp4';
   const rawUrl = `${base}/movie/${username}/${S.password}/${m.stream_id}.${ext}`;
-  const url = window.location.protocol !== 'https:' ? rawUrl
+  const url  = window.location.protocol !== 'https:' ? rawUrl
     : S.cfg?.liveProxy ? `${S.cfg.liveProxy}/proxy?url=${encodeURIComponent(rawUrl)}`
     : px(rawUrl);
 
   updateEPGChannel(m.name);
   clearEPGBar();
   id('epgNowTitle').textContent = m.plot ? m.plot.substring(0, 80) + (m.plot.length > 80 ? '…' : '') : '—';
+  id('nowProgTitle').textContent = m.name;
 
   if (ext === 'm3u8') {
     hlsPlay(url);
@@ -864,25 +1410,17 @@ function playVOD(m) {
 
 // ─── Series browser ───────────────────────────────────────────────────────────
 async function openSeries(s) {
-  id('serTitle').textContent  = s.name || '';
-  id('serGenre').textContent  = s.genre || '';
+  id('serTitle').textContent  = s.name   || '';
+  id('serGenre').textContent  = s.genre  || '';
   id('serRating').textContent = s.rating ? `★ ${parseFloat(s.rating).toFixed(1)} / 10` : '';
-  id('serPlot').textContent   = s.plot || '';
+  id('serPlot').textContent   = s.plot   || '';
 
-  // Cover image
-  const img = id('serCover');
-  const fb  = id('serCoverFb');
-  if (s.cover) {
-    img.src = s.cover;
-    img.style.display = '';
-    fb.style.display  = 'none';
-  } else {
-    img.style.display = 'none';
-    fb.style.display  = 'flex';
-  }
+  const img = id('serCover'), fb = id('serCoverFb');
+  if (s.cover) { img.src = s.cover; img.style.display = ''; fb.style.display = 'none'; }
+  else         { img.style.display = 'none'; fb.style.display = 'flex'; }
 
-  id('seasonTabs').innerHTML   = '';
-  id('episodeList').innerHTML  = '<div class="ser-loading"><div class="spinner"></div>Loading episodes…</div>';
+  id('seasonTabs').innerHTML  = '';
+  id('episodeList').innerHTML = '<div class="ser-loading"><div class="spinner"></div>Loading episodes…</div>';
   id('seriesModal').style.display = 'flex';
 
   try {
@@ -896,10 +1434,7 @@ async function openSeries(s) {
 
 function renderSeasons(episodes) {
   const seasons = Object.keys(episodes).sort((a, b) => Number(a) - Number(b));
-  if (!seasons.length) {
-    id('episodeList').innerHTML = '<div class="ser-loading">No episodes found</div>';
-    return;
-  }
+  if (!seasons.length) { id('episodeList').innerHTML = '<div class="ser-loading">No episodes found</div>'; return; }
   const tabs = id('seasonTabs');
   tabs.innerHTML = '';
   seasons.forEach((s, i) => {
@@ -917,18 +1452,13 @@ function renderSeasons(episodes) {
 }
 
 function renderEpisodes(eps) {
-  if (!eps || !eps.length) {
-    id('episodeList').innerHTML = '<div class="ser-loading">No episodes in this season</div>';
-    return;
-  }
+  if (!eps || !eps.length) { id('episodeList').innerHTML = '<div class="ser-loading">No episodes in this season</div>'; return; }
   const frag = document.createDocumentFragment();
   eps.forEach(ep => {
     const el = document.createElement('div');
     el.className = 'ep-item';
-    const thumbHtml = ep.info?.movie_image
-      ? `<img class="ep-thumb" src="${esc(ep.info.movie_image)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-      : '';
-    const fbStyle = ep.info?.movie_image ? 'style="display:none"' : '';
+    const thumbHtml = ep.info?.movie_image ? `<img class="ep-thumb" src="${esc(ep.info.movie_image)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
+    const fbStyle   = ep.info?.movie_image ? 'style="display:none"' : '';
     const dur = ep.info?.duration || '';
     el.innerHTML = `
       <span class="ep-num">${esc(String(ep.episode_num || ''))}</span>
@@ -938,10 +1468,8 @@ function renderEpisodes(eps) {
         <div class="ep-title">${esc(ep.title || `Episode ${ep.episode_num}`)}</div>
         ${dur ? `<div class="ep-dur">${esc(dur)}</div>` : ''}
       </div>
-      <button class="ep-play" title="Play">▶</button>
-    `;
-    const playBtn = el.querySelector('.ep-play');
-    playBtn.onclick = (e) => { e.stopPropagation(); playEpisode(ep); };
+      <button class="ep-play" title="Play">▶</button>`;
+    el.querySelector('.ep-play').onclick = (e) => { e.stopPropagation(); playEpisode(ep); };
     el.onclick = () => playEpisode(ep);
     frag.appendChild(el);
   });
@@ -952,68 +1480,59 @@ function renderEpisodes(eps) {
 function playEpisode(ep) {
   hideSeriesModal();
   const { server, username } = S.cfg;
-  const base = server.replace(/\/+$/, '');
-  const ext  = ep.container_extension || 'mp4';
-  // IPTV server blocks datacenter IPs — route through Pi tunnel, fall back to Railway proxy
+  const base   = server.replace(/\/+$/, '');
+  const ext    = ep.container_extension || 'mp4';
   const rawUrl = `${base}/series/${username}/${S.password}/${ep.id}.${ext}`;
-  const url  = window.location.protocol !== 'https:' ? rawUrl
+  const url    = window.location.protocol !== 'https:' ? rawUrl
     : S.cfg?.liveProxy ? `${S.cfg.liveProxy}/proxy?url=${encodeURIComponent(rawUrl)}`
     : px(rawUrl);
 
   S.currentCh = ep;
-  id('overlayStatus').textContent = 'Loading…';
-  id('overlay').style.display = 'flex';
+  setVideoLoading();
 
-  updateEPGChannel(S.seriesInfo?.info?.name || 'Series');
+  const seriesName = S.seriesInfo?.info?.name || 'Series';
+  updateEPGChannel(seriesName);
   clearEPGBar();
-  id('epgNowTitle').textContent = ep.title || `Episode ${ep.episode_num}`;
+  id('epgNowTitle').textContent  = ep.title || `Episode ${ep.episode_num}`;
+  id('nowProgTitle').textContent = ep.title || `Episode ${ep.episode_num}`;
 
-  if (ext === 'm3u8') {
-    hlsPlay(url);
-  } else {
-    playDirect(url);
-  }
+  if (ext === 'm3u8') hlsPlay(url); else playDirect(url);
 }
 
-function hideSeriesModal() { id('seriesModal').style.display = 'none'; }
-function onSeriesModalBg(e) { if (e.target === id('seriesModal')) hideSeriesModal(); }
+function hideSeriesModal()    { id('seriesModal').style.display = 'none'; }
+function onSeriesModalBg(e)   { if (e.target === id('seriesModal')) hideSeriesModal(); }
 
-// ─── Direct video (MP4 / MKV / AVI etc.) ─────────────────────────────────────
+// ─── Video state helpers ──────────────────────────────────────────────────────
+function setVideoLoading() {
+  document.body.classList.remove('playing', 'home');
+  document.body.classList.add('loading');
+}
+function setVideoPlaying() {
+  document.body.classList.remove('loading');
+  document.body.classList.add('playing');
+}
+function setVideoIdle() {
+  document.body.classList.remove('loading', 'playing');
+}
+
+// ─── Direct video playback ────────────────────────────────────────────────────
 function playDirect(url) {
   const video = id('player');
   if (S.hls) { S.hls.destroy(); S.hls = null; }
   video.src = url;
   video.load();
   video.play().catch(() => {});
-  video.addEventListener('playing', () => { id('overlay').style.display = 'none'; }, { once: true });
-  video.addEventListener('error', () => {
-    id('overlayStatus').textContent = 'Format not supported by your browser';
-    id('overlay').style.display = 'flex';
-  }, { once: true });
+  video.addEventListener('playing', setVideoPlaying, { once: true });
+  video.addEventListener('error', () => { setVideoIdle(); toast('Playback error', 'err'); }, { once: true });
 }
 
-// ─── Custom HLS loader (live TV on HTTPS/Railway) ────────────────────────────
-// Problem: cf.turbostech.com blocks Railway's datacenter IP for live streams.
-// The segment URLs contain an IP-bound token — the server that fetches the
-// manifest must also fetch the segments (same IP = token valid).
-//
-// Solution: route EVERYTHING (manifest + segments) through api.allorigins.win,
-// a free CORS proxy that uses its own non-blocked IPs. Each manifest fetch
-// gets a fresh timestamp to bust allorigins.win's cache so live streams update.
-// On local HTTP dev, use the normal Railway proxy as before.
-
+// ─── Custom HLS loader ────────────────────────────────────────────────────────
 function liveProxyWrap(url, bustCache) {
-  // Use Cloudflare Worker if configured (handles manifest + segments from same IP).
-  // Falls back to allorigins.win for manifests only (blocks .ts segments).
   const cfWorker = (typeof S !== 'undefined' && S.cfg?.liveProxy) ? S.cfg.liveProxy : '';
   const ts = bustCache ? '&_=' + Date.now() : '';
-  if (cfWorker) {
-    return cfWorker + '/proxy?url=' + encodeURIComponent(url) + ts;
-  }
-  // allorigins.win fallback — works for manifests, segments may fail
+  if (cfWorker) return cfWorker + '/proxy?url=' + encodeURIComponent(url) + ts;
   return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url) + ts;
 }
-// Keep legacy alias used in rewriteM3U8Lines
 function aoWrap(url, bustCache) { return liveProxyWrap(url, bustCache); }
 
 function rewriteM3U8Lines(text, reqUrl) {
@@ -1032,7 +1551,6 @@ function rewriteM3U8Lines(text, reqUrl) {
     if (!t || t.startsWith('#')) return line;
     try {
       const abs = t.startsWith('http') ? t : (base ? new URL(t, base).toString() : t);
-      // Segments: route through allorigins.win (same IP as manifest = token valid)
       return aoWrap(abs);
     } catch { return line; }
   }).join('\n');
@@ -1047,9 +1565,6 @@ function createDirectLoader() {
         const abortCtrl = new AbortController();
         this._ctrl = abortCtrl;
         const reqUrl = context.url;
-        // Strip any proxy wrapping to get the real IPTV URL.
-        // hls.js reuses the response url for manifest refreshes, so we may
-        // receive an already-wrapped URL on the 2nd+ call — unwrap it.
         const lp = (typeof S !== 'undefined' && S.cfg?.liveProxy) || '';
         const realUrl = (() => {
           try {
@@ -1060,57 +1575,31 @@ function createDirectLoader() {
           } catch {}
           return reqUrl;
         })();
-
-        const proxyUrl = liveProxyWrap(realUrl, true);
-        // The proxy base URL (tunnel or allorigins) — used to absolutize relative segment paths
+        const proxyUrl  = liveProxyWrap(realUrl, true);
         const proxyBase = (typeof S !== 'undefined' && S.cfg?.liveProxy)
-          ? S.cfg.liveProxy  // e.g. https://flex-xxx.trycloudflare.com
-          : 'https://api.allorigins.win';
-
+          ? S.cfg.liveProxy : 'https://api.allorigins.win';
         fetch(proxyUrl, { signal: abortCtrl.signal })
-          .then(r => {
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            return r.text();
-          })
+          .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
           .then(text => {
             if (!text || !text.includes('#EXTM3U')) throw new Error('Empty or invalid manifest');
-
-            // If using the Pi tunnel, the proxy already rewrites segment URLs to
-            // root-relative paths like /proxy?url=.... Make them absolute so hls.js
-            // can fetch them correctly regardless of what base URL it uses.
             let rewritten;
             if (S.cfg?.liveProxy) {
               rewritten = text.split('\n').map(line => {
                 const t = line.trim();
                 if (!t || t.startsWith('#')) return line;
-                // Root-relative → absolute with tunnel base
                 if (t.startsWith('/')) return proxyBase + t;
-                // Already absolute → keep as-is
                 return line;
               }).join('\n');
             } else {
-              // allorigins.win fallback: rewrite using standard logic
               rewritten = rewriteM3U8Lines(text, realUrl);
             }
-
             const now = performance.now();
-            const stats = {
-              aborted: false, loaded: rewritten.length, retry: 0,
-              total: rewritten.length, chunkCount: 1, bwEstimate: 0,
-              loading: { start: now - 10, first: now - 5, end: now },
-              parsing: { start: now, end: now },
-              buffering: { start: now, first: now, end: now },
-            };
-            // Pass realUrl so hls.js stores the clean IPTV URL for future refreshes,
-            // not the proxy URL (which would get double-wrapped on the next call).
+            const stats = { aborted:false, loaded:rewritten.length, retry:0, total:rewritten.length, chunkCount:1, bwEstimate:0,
+              loading:{start:now-10,first:now-5,end:now}, parsing:{start:now,end:now}, buffering:{start:now,first:now,end:now} };
             callbacks.onSuccess({ data: rewritten, url: realUrl }, stats, context, null);
           })
-          .catch(e => {
-            if (e.name === 'AbortError') return;
-            callbacks.onError({ code: 0, text: e.message }, context, null, null);
-          });
+          .catch(e => { if (e.name !== 'AbortError') callbacks.onError({ code:0, text:e.message }, context, null, null); });
       } else {
-        // Local HTTP dev or non-manifest: use default loader (goes through Railway proxy)
         super.load(context, config, callbacks);
       }
     }
@@ -1118,21 +1607,15 @@ function createDirectLoader() {
   };
 }
 
-// ─── HLS ──────────────────────────────────────────────────────────────────────
+// ─── HLS playback ─────────────────────────────────────────────────────────────
 function hlsPlay(url, nativeFallback) {
   const video = id('player');
   if (S.hls) { S.hls.destroy(); S.hls = null; }
-
-  video.addEventListener('playing', () => { id('overlay').style.display = 'none'; }, { once: true });
 
   const fallback = nativeFallback || url;
 
   if (Hls.isSupported()) {
     const hlsCfg = { enableWorker: true };
-    // For live TV on HTTPS without a Pi tunnel proxy, use the custom loader that
-    // fetches via allorigins.win and rewrites segment URLs.
-    // When liveProxy IS set, the URL passed in is already the tunnel URL — hls.js
-    // fetches it directly (HTTPS, no mixed-content) so no custom loader is needed.
     if (S.mode === 'live' && window.location.protocol === 'https:' && !S.cfg?.liveProxy) {
       hlsCfg.loader = createDirectLoader();
     }
@@ -1141,25 +1624,21 @@ function hlsPlay(url, nativeFallback) {
     hls.loadSource(url);
     hls.attachMedia(video);
     hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+    video.addEventListener('playing', setVideoPlaying, { once: true });
     hls.on(Hls.Events.ERROR, (_, d) => {
       if (!d.fatal) return;
-      if (d.type === Hls.ErrorTypes.NETWORK_ERROR) {
-        hls.startLoad();
-      } else if (d.type === Hls.ErrorTypes.MEDIA_ERROR) {
-        hls.recoverMediaError();
-      } else {
-        // HLS failed — try native MP4 fallback
-        hls.destroy(); S.hls = null;
-        video.src = fallback;
-        video.play().catch(() => {});
-      }
+      if (d.type === Hls.ErrorTypes.NETWORK_ERROR) { hls.startLoad(); }
+      else if (d.type === Hls.ErrorTypes.MEDIA_ERROR) { hls.recoverMediaError(); }
+      else { hls.destroy(); S.hls = null; video.src = fallback; video.play().catch(() => {}); }
     });
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-    // Safari native HLS — fetch directly (user's IP)
-    video.src = url; video.play().catch(() => {});
+    video.src = url;
+    video.play().catch(() => {});
+    video.addEventListener('playing', setVideoPlaying, { once: true });
   } else {
-    // Last resort: native video element (mp4)
-    video.src = fallback; video.play().catch(() => {});
+    video.src = fallback;
+    video.play().catch(() => {});
+    video.addEventListener('playing', setVideoPlaying, { once: true });
   }
 }
 
@@ -1172,14 +1651,14 @@ async function fetchEPG(streamId) {
     S.epgTimer = setTimeout(() => {
       if (S.currentCh?.stream_id === streamId && S.mode === 'live') fetchEPG(streamId);
     }, 60_000);
-  } catch { /* EPG is optional */ }
+  } catch { /* EPG optional */ }
 }
 
 function updateEPGBar(listings, streamId) {
   if (!listings.length) return;
-  const now  = Date.now() / 1000;
-  const cur  = listings[0];
-  const nxt  = listings[1];
+  const now   = Date.now() / 1000;
+  const cur   = listings[0];
+  const nxt   = listings[1];
   const start = Number(cur.start_timestamp);
   const stop  = Number(cur.stop_timestamp);
   const pct   = Math.max(0, Math.min(100, (now - start) / (stop - start) * 100));
@@ -1189,6 +1668,8 @@ function updateEPGBar(listings, streamId) {
   id('epgNowTime').textContent  = `${fmtTs(start)} – ${fmtTs(stop)}`;
   id('epgFill').style.width     = pct.toFixed(1) + '%';
   id('epgPct').textContent      = Math.round(pct) + '% complete';
+  id('nowProgTitle').textContent = title;
+  id('nowProgFill').style.width  = pct.toFixed(1) + '%';
   if (nxt) {
     id('epgNextTitle').textContent = b64dec(nxt.title);
     id('epgNextTime').textContent  = `${fmtTs(Number(nxt.start_timestamp))} – ${fmtTs(Number(nxt.stop_timestamp))}`;
@@ -1197,52 +1678,60 @@ function updateEPGBar(listings, streamId) {
   if (progEl) progEl.textContent = title;
 }
 
-function updateEPGChannel(name) { id('epgChName').textContent = name; }
+function updateEPGChannel(name) {
+  id('epgChName').textContent  = name;
+  id('nowChBadge').textContent = name;
+}
 function clearEPGBar() {
   ['epgNowTitle','epgNowTime','epgNextTitle','epgNextTime'].forEach(i => id(i).textContent = '—');
-  id('epgFill').style.width = '0%';
-  id('epgPct').textContent  = '';
+  id('epgFill').style.width   = '0%';
+  id('epgPct').textContent    = '';
+  id('nowProgFill').style.width = '0%';
 }
 
-function b64dec(str) { if (!str) return '—'; try { return atob(str) || str; } catch { return str; } }
-function fmtTs(ts)   { return new Date(ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
-
 // ─── Settings ─────────────────────────────────────────────────────────────────
-function showSettings() {
+function openSettings() {
   id('cfgServer').value = S.cfg.server   || '';
   id('cfgUser').value   = S.cfg.username || '';
   id('cfgPass').value   = S.password     || '';
-  // Show current Pi tunnel status
-  const ps = id('piStatus');
+  const dot  = id('piDot');
+  const text = id('piStatusText');
   if (S.cfg.liveProxy) {
-    ps.style.color = 'var(--live)';
-    ps.textContent = '🟢 Connected — ' + S.cfg.liveProxy;
+    dot.classList.remove('offline');
+    text.style.color = 'var(--live)';
+    text.textContent = 'Connected — ' + S.cfg.liveProxy.replace('https://', '');
   } else {
-    ps.style.color = 'var(--err)';
-    ps.textContent = '🔴 Not connected — Pi may be offline';
+    dot.classList.add('offline');
+    text.style.color = 'var(--err)';
+    text.textContent = 'Not connected — Pi may be offline';
   }
   id('settingsModal').style.display = 'flex';
   setTimeout(() => id('cfgServer').focus(), 40);
 }
-function hideSettings() { id('settingsModal').style.display = 'none'; }
-function onModalBg(e)   { if (e.target === id('settingsModal')) hideSettings(); }
+function closeSettings() { id('settingsModal').style.display = 'none'; }
+function onModalBg(e)    { if (e.target === id('settingsModal')) closeSettings(); }
+
 function saveSettings() {
   const server   = id('cfgServer').value.trim();
   const username = id('cfgUser').value.trim();
   const password = id('cfgPass').value;
   if (!server || !username || !password) { toast('Fill in all three fields', 'err'); return; }
-  // Invalidate caches when server changes
   if (server !== S.cfg.server || username !== S.cfg.username) {
     S.live.loaded = S.vod.loaded = S.series.loaded = false;
   }
-  S.cfg.server    = server;
-  S.cfg.username  = username;
-  // liveProxy is auto-managed via refreshTunnelUrl(), not manually editable
-  S.password      = password;
+  S.cfg.server   = server;
+  S.cfg.username = username;
+  S.password     = password;
   sessionStorage.setItem('iptv_pass', password);
   saveCfg();
-  hideSettings();
-  loadCurrent();
+  closeSettings();
+  openPanel(S.mode || 'live');
+}
+
+function reloadContent() {
+  S.live.loaded = S.vod.loaded = S.series.loaded = false;
+  closeSettings();
+  openPanel(S.mode || 'live');
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -1257,25 +1746,23 @@ function toast(msg, type = '') {
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 function id(s) { return document.getElementById(s); }
-// Force HTTPS on the base URL so VOD streams work from HTTPS pages (no mixed content)
 function httpsBase(base) { return base.replace(/^http:\/\//i, 'https://'); }
 function esc(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
+function b64dec(str) { if (!str) return '—'; try { return atob(str) || str; } catch { return str; } }
+function fmtTs(ts)   { return new Date(ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { hideSettings(); hideSeriesModal(); }
+  if (e.key === 'Escape') { closeSettings(); hideSeriesModal(); }
 });
-// Warm up the Pi tunnel URL as early as possible (runs in background, no await)
+
 refreshTunnelUrl();
-if (S.cfg.server && S.cfg.username) {
-  try { id('overlayStatus').textContent = `${S.cfg.username} @ ${new URL(S.cfg.server).hostname}`; } catch {}
-  // Auto-load if session password is still available
-  if (S.password) loadCurrent();
+if (S.cfg.server && S.cfg.username && S.password) {
+  openPanel('live');
 }
 </script>
 </body>
 </html>
-// Wed Apr  8 17:14:25 EDT 2026

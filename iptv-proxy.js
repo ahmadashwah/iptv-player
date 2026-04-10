@@ -21,6 +21,7 @@ app.options('*', (_, res) => res.sendStatus(204));
 
 // ── Serve the player ──────────────────────────────────────────────────────────
 app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/design-mockup.html', (_, res) => res.sendFile(path.join(__dirname, 'design-mockup.html')));
 
 // ── Generic proxy ─────────────────────────────────────────────────────────────
 app.get('/proxy', (req, res) => {
