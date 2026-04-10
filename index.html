@@ -460,7 +460,8 @@ body.loading #loadingOverlay { display: flex; }
   opacity: 0; transition: opacity .3s;
 }
 body.playing #nowBar { opacity: 1; }
-.now-badge  { font-size: 11px; color: var(--accent); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.now-badge  { font-size: 11px; color: var(--accent); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; display: none; align-items: center; gap: 6px; }
+body.mode-live .now-badge { display: flex; }
 .now-dot    { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1.5s infinite; }
 .now-title  { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
 .now-track  { height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; max-width: 400px; }
