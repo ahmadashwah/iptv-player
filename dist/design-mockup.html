@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPTV — Design V2 Mockup</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: #141414;
+  color: #fff;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── State classes on <body> ─────────────────────────────────── */
+/* body.panel-open  → channel panel visible */
+/* body.search-open → search panel visible  */
+/* body.active-live / active-vod / active-series */
+
+/* ════════════════════════════════════════════════════════════════
+   LEFT ICON RAIL
+════════════════════════════════════════════════════════════════ */
+#rail {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 68px;
+  background: rgba(10,10,10,0.97);
+  border-right: 1px solid #1e1e1e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  gap: 6px;
+  z-index: 100;
+  transition: width .25s cubic-bezier(.4,0,.2,1);
+}
+
+/* Expanded rail shows labels */
+#rail.expanded {
+  width: 180px;
+  align-items: flex-start;
+  padding: 20px 0;
+}
+
+.rail-logo {
+  font-size: 20px;
+  font-weight: 900;
+  color: #e50914;
+  letter-spacing: 2px;
+  margin-bottom: 18px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+#rail.expanded .rail-logo { padding-left: 20px; justify-content: flex-start; }
+
+.rail-item {
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  cursor: pointer;
+  border-radius: 0;
+  position: relative;
+  transition: background .15s;
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.rail-item:hover { background: rgba(255,255,255,0.06); }
+.rail-item.active { background: rgba(229,9,20,0.12); }
+.rail-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: #e50914;
+}
+
+.rail-icon {
+  font-size: 20px;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.rail-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #ccc;
+  opacity: 0;
+  transition: opacity .2s;
+  pointer-events: none;
+}
+#rail.expanded .rail-label { opacity: 1; }
+.rail-item.active .rail-label { color: #fff; }
+.rail-item:hover .rail-label { color: #fff; }
+
+.rail-spacer { flex: 1; }
+
+/* ════════════════════════════════════════════════════════════════
+   CHANNEL PANEL (slides in from left, beside the rail)
+════════════════════════════════════════════════════════════════ */
+#panel {
+  position: fixed;
+  left: 68px; top: 0; bottom: 0;
+  width: 0;
+  overflow: hidden;
+  background: #1a1a1a;
+  border-right: 1px solid #242424;
+  z-index: 90;
+  transition: width .25s cubic-bezier(.4,0,.2,1);
+  display: flex;
+  flex-direction: column;
+}
+body.panel-open #panel,
+body.search-open #panel {
+  width: 300px;
+}
+
+/* Search panel header */
+#searchPanel {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+}
+body.search-open #searchPanel { display: flex; }
+body.search-open #channelPanel { display: none; }
+
+#channelPanel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Panel header */
+.panel-header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid #242424;
+  flex-shrink: 0;
+}
+.panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 10px;
+}
+.panel-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #242424;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 0 12px;
+  height: 36px;
+}
+.panel-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 13px;
+}
+.panel-search input::placeholder { color: #666; }
+.panel-search-icon { color: #666; font-size: 14px; }
+
+/* Category pills inside panel */
+.panel-cats {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid #1e1e1e;
+  flex-shrink: 0;
+  overflow-y: auto;
+  max-height: 80px;
+}
+.panel-cat {
+  padding: 3px 11px;
+  border-radius: 20px;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: #888;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.panel-cat:hover { color: #fff; border-color: #666; }
+.panel-cat.active { background: #e50914; border-color: #e50914; color: #fff; }
+
+/* Channel count */
+.panel-count {
+  padding: 4px 16px;
+  font-size: 11px;
+  color: #555;
+  border-bottom: 1px solid #1e1e1e;
+  flex-shrink: 0;
+}
+
+/* Channel list */
+.panel-list { flex: 1; overflow-y: auto; }
+.panel-list::-webkit-scrollbar { width: 3px; }
+.panel-list::-webkit-scrollbar-thumb { background: #333; }
+
+/* Channel row */
+.ch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-bottom: 1px solid #1e1e1e;
+  cursor: pointer;
+  transition: background .1s;
+  position: relative;
+}
+.ch-row:hover { background: #242424; }
+.ch-row.active {
+  background: rgba(229,9,20,0.1);
+  border-left: 3px solid #e50914;
+  padding-left: 11px;
+}
+.ch-thumb {
+  width: 38px; height: 38px;
+  border-radius: 4px;
+  background: #2a2a2a;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  overflow: hidden;
+}
+.ch-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.ch-info { flex: 1; min-width: 0; }
+.ch-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch-sub  { font-size: 11px; color: #666; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch-live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #e50914;
+  flex-shrink: 0;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* VOD row */
+.vod-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid #1e1e1e;
+  cursor: pointer;
+  transition: background .1s;
+}
+.vod-row:hover { background: #242424; }
+.vod-thumb {
+  width: 40px; height: 56px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Search result row (cross-category) */
+.search-result-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-bottom: 1px solid #1e1e1e;
+  cursor: pointer;
+  transition: background .1s;
+}
+.search-result-row:hover { background: #242424; }
+.sr-type-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.sr-type-live   { background: rgba(229,9,20,0.3); color: #ff6b6b; }
+.sr-type-movie  { background: rgba(74,222,128,0.2); color: #4ade80; }
+.sr-type-series { background: rgba(251,191,36,0.2); color: #fbbf24; }
+
+/* Search header with filter tabs */
+.search-filters {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #1e1e1e;
+  flex-shrink: 0;
+}
+.sf-btn {
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: #888;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.sf-btn:hover { color: #fff; border-color: #666; }
+.sf-btn.active { background: #e50914; border-color: #e50914; color: #fff; }
+
+/* ════════════════════════════════════════════════════════════════
+   MAIN CONTENT — Video player
+════════════════════════════════════════════════════════════════ */
+#main {
+  position: fixed;
+  left: 68px; top: 0; right: 0; bottom: 0;
+  transition: left .25s cubic-bezier(.4,0,.2,1);
+  display: flex;
+  flex-direction: column;
+  background: #000;
+}
+body.panel-open #main,
+body.search-open #main {
+  left: 368px; /* 68 + 300 */
+}
+
+/* Video area */
+#videoArea {
+  flex: 1;
+  position: relative;
+  background: #000;
+  overflow: hidden;
+}
+#overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, #0d0d0d 0%, #000 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: #555;
+}
+.ov-icon { font-size: 64px; opacity: 0.3; }
+.ov-text { font-size: 18px; font-weight: 500; color: #555; }
+
+/* Now Playing bar — bottom of video */
+#nowBar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, transparent 100%);
+  padding: 32px 24px 16px;
+  display: none;
+}
+body.playing #nowBar { display: block; }
+.now-channel { font-size: 12px; color: #e50914; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+.now-title   { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.now-progress { height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; }
+.now-fill     { height: 100%; width: 42%; background: #e50914; border-radius: 2px; }
+
+/* EPG bar */
+#epgBar {
+  background: #111;
+  border-top: 1px solid #1e1e1e;
+  height: 58px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.epg-name  { font-size: 12px; font-weight: 700; color: #e50914; max-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+.epg-div   { width: 1px; height: 34px; background: #2a2a2a; flex-shrink: 0; }
+.epg-slot  { flex: 1; min-width: 0; }
+.epg-lbl   { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+.epg-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.epg-time  { font-size: 11px; color: #777; }
+.epg-track { height: 3px; background: #2a2a2a; border-radius: 2px; overflow: hidden; margin-top: 5px; }
+.epg-fill  { height: 100%; width: 42%; background: #e50914; border-radius: 2px; }
+
+/* ════════════════════════════════════════════════════════════════
+   SETTINGS MODAL
+════════════════════════════════════════════════════════════════ */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.8);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+}
+.modal-box {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 32px;
+  width: 460px;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 16px 60px rgba(0,0,0,0.8);
+}
+.modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.modal-subtitle { font-size: 13px; color: #777; margin-bottom: 24px; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 11px; color: #888; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px; }
+.field input {
+  width: 100%; height: 42px;
+  background: #222; border: 1px solid #333;
+  border-radius: 4px; padding: 0 14px;
+  color: #fff; font-size: 14px; outline: none;
+}
+.field input:focus { border-color: #e50914; }
+.field-note { font-size: 11px; color: #666; margin-top: 5px; }
+
+/* Pi status row */
+.pi-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #222;
+  border-radius: 4px;
+  border: 1px solid #333;
+  font-size: 13px;
+}
+.pi-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; flex-shrink: 0; animation: pulse 2s infinite; }
+.pi-dot.offline { background: #f87171; }
+
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.modal-actions .divider { flex: 1; }
+
+.btn {
+  height: 38px; padding: 0 20px;
+  border-radius: 4px; border: none;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: filter .15s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:hover { filter: brightness(1.15); }
+.btn-red    { background: #e50914; color: #fff; }
+.btn-ghost  { background: transparent; border: 1px solid #444; color: #aaa; }
+.btn-ghost:hover { border-color: #888; color: #fff; }
+.btn-reload { background: #2a2a2a; color: #ccc; border: 1px solid #3a3a3a; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   DEMO CONTROLS (floating bottom bar to switch states)
+════════════════════════════════════════════════════════════════ */
+#demoBar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%; transform: translateX(-50%);
+  z-index: 999;
+  background: rgba(0,0,0,0.92);
+  border: 1px solid #333;
+  border-radius: 30px;
+  padding: 8px 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+}
+#demoBar span { font-size: 11px; color: #666; margin-right: 4px; letter-spacing: 0.5px; }
+.demo-btn {
+  padding: 5px 14px; border-radius: 20px;
+  background: #1e1e1e; border: 1px solid #333;
+  color: #aaa; font-size: 12px; cursor: pointer;
+  transition: all .15s;
+}
+.demo-btn:hover { border-color: #666; color: #fff; }
+.demo-btn.on { background: #e50914; border-color: #e50914; color: #fff; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+</style>
+</head>
+<body class="active-live">
+
+<!-- ══════════════════════════════════════════════════
+     LEFT ICON RAIL
+══════════════════════════════════════════════════ -->
+<div id="rail">
+  <div class="rail-logo">IPTV<span style="color:#fff">·</span></div>
+
+  <!-- Search -->
+  <div class="rail-item" id="rail-search" onclick="toggleSearch()">
+    <div class="rail-icon">🔍</div>
+    <span class="rail-label">Search</span>
+  </div>
+
+  <!-- Live TV -->
+  <div class="rail-item active" id="rail-live" onclick="openPanel('live')">
+    <div class="rail-icon">📺</div>
+    <span class="rail-label">Live TV</span>
+  </div>
+
+  <!-- Movies -->
+  <div class="rail-item" id="rail-vod" onclick="openPanel('vod')">
+    <div class="rail-icon">🎬</div>
+    <span class="rail-label">Movies</span>
+  </div>
+
+  <!-- Series -->
+  <div class="rail-item" id="rail-series" onclick="openPanel('series')">
+    <div class="rail-icon">🎭</div>
+    <span class="rail-label">Series</span>
+  </div>
+
+  <div class="rail-spacer"></div>
+
+  <!-- Settings -->
+  <div class="rail-item" id="rail-settings" onclick="openSettings()">
+    <div class="rail-icon">⚙</div>
+    <span class="rail-label">Settings</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SLIDE-OUT PANEL
+══════════════════════════════════════════════════ -->
+<div id="panel">
+
+  <!-- ── Channel Panel ── -->
+  <div id="channelPanel">
+    <div class="panel-header">
+      <div class="panel-title" id="panelTitle">Live TV</div>
+      <div class="panel-search">
+        <span class="panel-search-icon">🔍</span>
+        <input type="text" placeholder="Filter channels…" id="filterInput">
+      </div>
+    </div>
+    <div class="panel-cats">
+      <button class="panel-cat active">All</button>
+      <button class="panel-cat">Sports</button>
+      <button class="panel-cat">News</button>
+      <button class="panel-cat">Drama</button>
+      <button class="panel-cat">Kids</button>
+      <button class="panel-cat">Movies</button>
+      <button class="panel-cat">Documentary</button>
+    </div>
+    <div class="panel-count">1,240 channels</div>
+    <div class="panel-list" id="channelList">
+      <!-- Generated by JS below -->
+    </div>
+  </div>
+
+  <!-- ── Search Panel ── -->
+  <div id="searchPanel">
+    <div class="panel-header">
+      <div class="panel-title">Search Everything</div>
+      <div class="panel-search" style="margin-bottom:0">
+        <span class="panel-search-icon">🔍</span>
+        <input type="text" placeholder="Movies, channels, series…" id="globalSearch" oninput="runSearch(this.value)" autofocus>
+      </div>
+    </div>
+    <div class="search-filters">
+      <button class="sf-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="sf-btn" onclick="setFilter('live',this)">📺 Live</button>
+      <button class="sf-btn" onclick="setFilter('movie',this)">🎬 Movies</button>
+      <button class="sf-btn" onclick="setFilter('series',this)">🎭 Series</button>
+    </div>
+    <div class="panel-list" id="searchResults">
+      <div style="padding:32px 16px;text-align:center;color:#555;font-size:13px">
+        Start typing to search across all content…
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     MAIN VIDEO AREA
+══════════════════════════════════════════════════ -->
+<div id="main">
+  <div id="videoArea">
+    <div id="overlay">
+      <div class="ov-icon">📺</div>
+      <div class="ov-text">Select something to watch</div>
+    </div>
+
+    <!-- Now playing overlay (shown when playing) -->
+    <div id="nowBar">
+      <div class="now-channel">beIN Sports HD 1 · LIVE</div>
+      <div class="now-title">Premier League: Manchester City vs Arsenal</div>
+      <div class="now-progress"><div class="now-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- EPG Bar -->
+  <div id="epgBar">
+    <div class="epg-name">beIN Sports 1</div>
+    <div class="epg-div"></div>
+    <div class="epg-slot">
+      <div class="epg-lbl">Now Playing</div>
+      <div class="epg-title">Premier League: Manchester City vs Arsenal</div>
+      <div class="epg-time">20:00 – 22:00</div>
+      <div class="epg-track"><div class="epg-fill"></div></div>
+    </div>
+    <div class="epg-div"></div>
+    <div class="epg-slot">
+      <div class="epg-lbl">Up Next</div>
+      <div class="epg-title">La Liga: Real Madrid vs Barcelona</div>
+      <div class="epg-time">22:00 – 00:00</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SETTINGS MODAL
+══════════════════════════════════════════════════ -->
+<div class="modal-bg" id="settingsModal" style="display:none" onclick="if(event.target===this)closeSettings()">
+  <div class="modal-box">
+    <div class="modal-title">⚙ Settings</div>
+    <div class="modal-subtitle">Configure your IPTV server connection</div>
+
+    <div class="field">
+      <label>Server URL</label>
+      <input type="text" placeholder="http://iptv-server.com:8080" value="http://cf.turbostech.com:8880">
+    </div>
+    <div class="field">
+      <label>Username</label>
+      <input type="text" placeholder="your_username" value="ahmadashwah">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" placeholder="••••••••" value="secret123">
+      <div class="field-note">🔒 Saved for this browser session only</div>
+    </div>
+
+    <div class="field">
+      <label>Raspberry Pi Tunnel</label>
+      <div class="pi-status">
+        <div class="pi-dot"></div>
+        <span style="color:#4ade80;font-weight:600">Connected</span>
+        <span style="color:#555;font-size:12px;margin-left:4px">— fragrant-bar.trycloudflare.com</span>
+      </div>
+      <div class="field-note">🍓 URL auto-updates when your Pi reconnects</div>
+    </div>
+
+    <div class="modal-actions">
+      <!-- Reload button lives here now -->
+      <button class="btn btn-reload" onclick="closeSettings()">↺ Reload Content</button>
+      <div class="divider"></div>
+      <button class="btn btn-ghost" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-red" onclick="closeSettings()">Save &amp; Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     DEMO CONTROLS
+══════════════════════════════════════════════════ -->
+<div id="demoBar">
+  <span>Demo:</span>
+  <button class="demo-btn" onclick="togglePanel()">Panel open/close</button>
+  <button class="demo-btn" onclick="toggleRailExpand()">Rail expand</button>
+  <button class="demo-btn" onclick="togglePlaying()">Now playing</button>
+  <button class="demo-btn" onclick="openSettings()">Settings</button>
+  <button class="demo-btn" onclick="toggleSearch()">Search</button>
+</div>
+
+<script>
+// ── Fake channel data ──────────────────────────────────────────
+const FAKE_CHANNELS = [
+  { name: 'beIN Sports HD 1', sub: 'Premier League · LIVE', type: 'live', active: true },
+  { name: 'beIN Sports HD 2', sub: 'La Liga · LIVE', type: 'live' },
+  { name: 'MBC Drama', sub: 'Noor · 21:00', type: 'live' },
+  { name: 'CNN International', sub: 'World News · LIVE', type: 'live' },
+  { name: 'Discovery Channel', sub: 'Planet Earth III', type: 'live' },
+  { name: 'Fox Sports', sub: 'NBA Playoffs · LIVE', type: 'live' },
+  { name: 'Sky News', sub: 'Breaking News · LIVE', type: 'live' },
+  { name: 'National Geographic', sub: 'Wildlife Documentary', type: 'live' },
+  { name: 'ESPN HD', sub: 'SportsCenter', type: 'live' },
+  { name: 'Al Jazeera', sub: 'News · LIVE', type: 'live' },
+  { name: 'BBC World', sub: 'HARDtalk', type: 'live' },
+  { name: 'MBC 4', sub: 'Series · 22:00', type: 'live' },
+];
+
+const FAKE_MOVIES = [
+  { name: 'Dune: Part Two', sub: 'Sci-Fi · 2024 · ★ 8.5', type: 'movie' },
+  { name: 'Oppenheimer', sub: 'Drama · 2023 · ★ 8.9', type: 'movie' },
+  { name: 'Top Gun: Maverick', sub: 'Action · 2022 · ★ 8.3', type: 'movie' },
+  { name: 'Avatar: The Way of Water', sub: 'Sci-Fi · 2022 · ★ 7.6', type: 'movie' },
+  { name: 'The Batman', sub: 'Action · 2022 · ★ 7.8', type: 'movie' },
+  { name: 'Interstellar', sub: 'Sci-Fi · 2014 · ★ 8.7', type: 'movie' },
+  { name: 'John Wick: Chapter 4', sub: 'Action · 2023 · ★ 7.8', type: 'movie' },
+];
+
+const FAKE_SERIES = [
+  { name: 'Breaking Bad', sub: 'Drama · 5 Seasons · ★ 9.5', type: 'series' },
+  { name: 'The Bear', sub: 'Drama · 3 Seasons · ★ 8.7', type: 'series' },
+  { name: 'House of the Dragon', sub: 'Fantasy · 2 Seasons · ★ 8.4', type: 'series' },
+  { name: 'The Last of Us', sub: 'Drama · 2 Seasons · ★ 8.7', type: 'series' },
+  { name: 'Succession', sub: 'Drama · 4 Seasons · ★ 8.9', type: 'series' },
+];
+
+// ── Render channel list ────────────────────────────────────────
+function renderChannels(items) {
+  const list = document.getElementById('channelList');
+  list.innerHTML = items.map(ch => `
+    <div class="ch-row${ch.active ? ' active' : ''}" onclick="selectChannel(this)">
+      <div class="ch-thumb">${ch.type === 'movie' ? '🎬' : ch.type === 'series' ? '🎭' : '📺'}</div>
+      <div class="ch-info">
+        <div class="ch-name">${ch.name}</div>
+        <div class="ch-sub">${ch.sub}</div>
+      </div>
+      ${ch.type === 'live' ? '<div class="ch-live-dot"></div>' : ''}
+    </div>
+  `).join('');
+}
+
+function selectChannel(el) {
+  document.querySelectorAll('.ch-row').forEach(r => r.classList.remove('active'));
+  el.classList.add('active');
+  document.body.classList.add('playing');
+}
+
+// Initial render
+renderChannels(FAKE_CHANNELS);
+
+// ── Panel open/close ───────────────────────────────────────────
+let currentPanel = 'live';
+let panelOpen = true;
+
+function openPanel(mode) {
+  document.body.classList.remove('search-open');
+  document.body.classList.add('panel-open');
+  panelOpen = true;
+
+  // Update rail active state
+  document.querySelectorAll('.rail-item').forEach(r => r.classList.remove('active'));
+  document.getElementById('rail-' + mode).classList.add('active');
+
+  // Update panel title and content
+  const titles = { live: 'Live TV', vod: 'Movies', series: 'Series' };
+  document.getElementById('panelTitle').textContent = titles[mode];
+
+  const data = mode === 'live' ? FAKE_CHANNELS : mode === 'vod' ? FAKE_MOVIES : FAKE_SERIES;
+  renderChannels(data);
+  document.getElementById('filterInput').placeholder =
+    mode === 'live' ? 'Filter channels…' :
+    mode === 'vod'  ? 'Filter movies…' : 'Filter series…';
+
+  currentPanel = mode;
+}
+
+function togglePanel() {
+  if (panelOpen && !document.body.classList.contains('search-open')) {
+    document.body.classList.remove('panel-open');
+    panelOpen = false;
+    document.querySelectorAll('.rail-item').forEach(r => r.classList.remove('active'));
+  } else {
+    openPanel(currentPanel);
+  }
+}
+
+// ── Search ─────────────────────────────────────────────────────
+let searchOpen = false;
+let searchFilter = 'all';
+
+function toggleSearch() {
+  searchOpen = !searchOpen;
+  if (searchOpen) {
+    document.body.classList.add('search-open');
+    document.body.classList.remove('panel-open');
+    document.querySelectorAll('.rail-item').forEach(r => r.classList.remove('active'));
+    document.getElementById('rail-search').classList.add('active');
+    setTimeout(() => document.getElementById('globalSearch').focus(), 300);
+  } else {
+    document.body.classList.remove('search-open');
+    document.getElementById('rail-search').classList.remove('active');
+  }
+}
+
+function setFilter(f, btn) {
+  searchFilter = f;
+  document.querySelectorAll('.sf-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  runSearch(document.getElementById('globalSearch').value);
+}
+
+function runSearch(q) {
+  const results = document.getElementById('searchResults');
+  if (!q.trim()) {
+    results.innerHTML = '<div style="padding:32px 16px;text-align:center;color:#555;font-size:13px">Start typing to search across all content…</div>';
+    return;
+  }
+  const lower = q.toLowerCase();
+  const all = [
+    ...FAKE_CHANNELS.filter(i => searchFilter === 'all' || searchFilter === 'live'),
+    ...FAKE_MOVIES.filter(i => searchFilter === 'all' || searchFilter === 'movie'),
+    ...FAKE_SERIES.filter(i => searchFilter === 'all' || searchFilter === 'series'),
+  ].filter(i => i.name.toLowerCase().includes(lower) || i.sub.toLowerCase().includes(lower));
+
+  if (!all.length) {
+    results.innerHTML = '<div style="padding:32px 16px;text-align:center;color:#555;font-size:13px">No results for "' + q + '"</div>';
+    return;
+  }
+
+  results.innerHTML = all.map(r => `
+    <div class="search-result-row" onclick="selectChannel(this)">
+      <div class="ch-thumb">${r.type === 'movie' ? '🎬' : r.type === 'series' ? '🎭' : '📺'}</div>
+      <div class="ch-info">
+        <div class="ch-name">${r.name}</div>
+        <div class="ch-sub">${r.sub}</div>
+      </div>
+      <span class="sr-type-badge sr-type-${r.type === 'movie' ? 'movie' : r.type === 'series' ? 'series' : 'live'}">
+        ${r.type === 'live' ? 'Live' : r.type === 'movie' ? 'Movie' : 'Series'}
+      </span>
+    </div>
+  `).join('');
+}
+
+// ── Rail hover expand ─────────────────────────────────────────
+let railExpanded = false;
+document.getElementById('rail').addEventListener('mouseenter', () => {
+  document.getElementById('rail').classList.add('expanded');
+});
+document.getElementById('rail').addEventListener('mouseleave', () => {
+  document.getElementById('rail').classList.remove('expanded');
+});
+
+function toggleRailExpand() {
+  railExpanded = !railExpanded;
+  document.getElementById('rail').classList.toggle('expanded', railExpanded);
+}
+
+// ── Settings ───────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('settingsModal').style.display = 'flex';
+}
+function closeSettings() {
+  document.getElementById('settingsModal').style.display = 'none';
+}
+
+// ── Playing state ─────────────────────────────────────────────
+function togglePlaying() {
+  document.body.classList.toggle('playing');
+  document.getElementById('overlay').style.display =
+    document.body.classList.contains('playing') ? 'none' : 'flex';
+}
+
+// Category pill clicks
+document.querySelectorAll('.panel-cat').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.panel-cat').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  };
+});
+</script>
+</body>
+</html>

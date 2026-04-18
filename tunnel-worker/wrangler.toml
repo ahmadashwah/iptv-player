@@ -1,0 +1,7 @@
+name = "iptv-tunnel"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "TUNNEL_KV"
+id = "759645dc30fb4f5f90b1fa094aa380e2"

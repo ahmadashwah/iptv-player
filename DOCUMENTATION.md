@@ -345,3 +345,97 @@ curl https://iptv-tunnel.ahmadashwah.workers.dev/
 **Tunnel URL not updating after Pi reboot**
 → Check `start-tunnel.sh` has execute permission: `chmod +x ~/iptv/start-tunnel.sh`
 → Check logs: `sudo journalctl -u iptv-tunnel -f`
+
+---
+
+## Limitations & What Could Break
+
+### 🔴 Single Points of Failure
+
+**1. Raspberry Pi goes down**
+Everything breaks — channels won't load, nothing plays. The entire backend runs on one
+device at home. If the Pi crashes, loses power, or overheats, the player is dead until
+you fix it.
+
+**2. Home internet goes down**
+Same result. No connection at home = no proxy = nothing works.
+
+**3. Pi's SD card corrupts**
+Raspberry Pis are notorious for SD card corruption, especially after sudden power cuts.
+If this happens you'd need to reinstall everything from scratch. The code is safe on
+GitHub but the systemd services, Node.js install, and cloudflared would need to be redone.
+
+---
+
+### 🟡 Things That Could Degrade
+
+**4. Cloudflare Tunnel URL changes unexpectedly**
+`trycloudflare.com` is a free "Quick Tunnel" — Cloudflare doesn't guarantee it stays up
+or that the registration always succeeds. If cloudflared crashes and restarts rapidly,
+the Worker KV might not update in time, causing the player to use a stale URL.
+
+**5. Home upload bandwidth**
+All video traffic passes through your Pi's home upload speed. If you're watching 1080p
+(~4 Mbps) and someone else at home is uploading large files, streaming will buffer.
+4K content (~20 Mbps) may be too much for most home connections.
+
+**6. Cloudflare free tier limits**
+- Workers: 100,000 requests/day free. Each page load = ~2 requests to the Worker.
+  You'd need 50,000 visits/day to hit the limit — very unlikely.
+- KV: 100,000 reads/day free. Same — not a real concern for personal use.
+- Pages: unlimited requests, no bandwidth cap.
+
+**7. `trycloudflare.com` deprecation**
+Cloudflare could retire the free Quick Tunnel service at any time with little notice.
+It's meant for testing, not production. This would break everything until you set up
+a named tunnel with a real domain.
+
+---
+
+### 🟠 IPTV Provider Side
+
+**8. Your IPTV subscription expires**
+Nothing to do with the code — but when credentials expire, nothing plays.
+
+**9. Provider changes their IP-blocking strategy**
+If `cf.turbostech.com` starts blocking based on something other than IP (e.g. user-agent,
+request patterns, session fingerprinting), the Pi tunnel might stop working too.
+
+**10. Provider changes their API**
+The app uses the Xtream Codes API. If the provider switches to a different protocol,
+the channel list and login would break.
+
+**11. Stream URLs become encrypted or signed**
+Some providers add time-limited tokens to stream URLs. This already exists partially
+(segment tokens are IP-bound), but if they add short-expiry URL signing, the proxy
+approach might not work.
+
+---
+
+### 🔵 Minor Annoyances
+
+**12. No offline support**
+Completely useless without internet — nothing is cached.
+
+**13. No multiple users**
+If two people try to watch different channels at the same time from the same account,
+the IPTV provider may kick one of them off (most providers limit concurrent streams to 1–2).
+
+**14. Seeking in long movies is slow**
+The video has to buffer through the Pi proxy. Seeking to a point 2 hours into a movie
+means the proxy has to stream all that data through your home connection.
+
+**15. Player URL is ugly**
+`iptv-player-d3o.pages.dev` — not a real domain. You could buy a domain (~$10/year)
+and point it here, but it's purely cosmetic.
+
+---
+
+### How to Mitigate the Biggest Risks
+
+| Risk | Mitigation |
+|---|---|
+| SD card corruption | Use a USB SSD instead of SD card (much more reliable) |
+| Pi power loss corruption | Add a UPS (small uninterruptible power supply) |
+| Tunnel service deprecation | Set up a named Cloudflare Tunnel with a real domain ($1–10/year) |
+| Pi is the only backend | Nothing cheap fixes this — fundamental trade-off of this approach |
