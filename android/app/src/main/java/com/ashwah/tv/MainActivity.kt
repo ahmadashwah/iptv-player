@@ -38,9 +38,26 @@ class MainActivity : FragmentActivity() {
         }
 
         webView.webChromeClient = object : WebChromeClient() {
-            // Allow autoplay without user gesture
+            private var customView: android.view.View? = null
+            private var customViewCallback: CustomViewCallback? = null
+
             override fun onPermissionRequest(request: PermissionRequest) {
                 request.grant(request.resources)
+            }
+
+            // Handle HTML5 fullscreen requests
+            override fun onShowCustomView(view: android.view.View, callback: CustomViewCallback) {
+                customView = view
+                customViewCallback = callback
+                setContentView(view)
+                window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+            }
+
+            override fun onHideCustomView() {
+                setContentView(webView)
+                window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+                customViewCallback?.onCustomViewHidden()
+                customView = null
             }
         }
 

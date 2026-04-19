@@ -1704,7 +1704,7 @@ body.login #loginScreen { display: flex; }
   <!-- VIDEO SCREEN -->
   <div id="videoScreen">
     <div id="videoArea">
-      <video id="player" playsinline></video>
+      <video id="player"></video>
       <input type="file" id="subtitleInput" accept=".srt,.vtt" style="display:none" onchange="loadSubtitleFile(this)">
 
       <!-- Loading overlay (spinner) -->
@@ -3167,10 +3167,12 @@ function setVideoPlaying() {
   document.body.classList.remove('loading');
   document.body.classList.add('playing');
   showControls();
-  // Auto fullscreen for TV experience
-  const el = document.documentElement;
-  if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
-  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  // Auto fullscreen — try video element first, then videoScreen, then document
+  const v   = id('player');
+  const vs  = id('videoScreen');
+  const el  = v.requestFullscreen ? v : vs.requestFullscreen ? vs : document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (req) req.call(el).catch(() => {});
 }
 function setVideoIdle() {
   clearTimeout(_loadingTimeout);
