@@ -1335,9 +1335,10 @@ body.login #loginScreen { display: flex; }
       <label for="loginEmail">Email</label>
       <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
     </div>
-    <div class="login-field">
+    <div class="login-field" style="position:relative">
       <label for="loginPassword">Password</label>
-      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" style="padding-right:44px">
+      <button type="button" onclick="(function(){const i=document.getElementById('loginPassword');const b=document.getElementById('loginPassToggle');i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'👁':'🙈';})()" id="loginPassToggle" tabindex="-1" style="position:absolute;right:10px;bottom:8px;background:none;border:none;cursor:pointer;font-size:16px;color:#888;padding:4px;">👁</button>
     </div>
     <div class="login-error" id="loginError"></div>
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In</button>
@@ -1804,7 +1805,7 @@ body.login #loginScreen { display: flex; }
 // ─── State ────────────────────────────────────────────────────────────────────
 const S = {
   cfg:      loadCfg(),
-  password: sessionStorage.getItem('iptv_pass') || '',
+  password: localStorage.getItem('iptv_pass') || sessionStorage.getItem('iptv_pass') || '',
   mode:     'live',
   activeCat: 'all',
   query:    '',
@@ -3393,7 +3394,7 @@ function saveSettings() {
   S.cfg.username = username;
   S.password     = password;
   S.cfg.tmdbKey  = id('cfgTmdbKey').value.trim();
-  sessionStorage.setItem('iptv_pass', password);
+  localStorage.setItem('iptv_pass', password);
   saveCfg();
   closeSettings();
   loadTMDBRows();
@@ -3870,6 +3871,7 @@ function loginManual() {
 function doLogout() {
   S.cfg.server = ''; S.cfg.username = ''; S.password = '';
   S.live.loaded = S.vod.loaded = S.series.loaded = false;
+  localStorage.removeItem('iptv_pass');
   sessionStorage.removeItem('iptv_pass');
   localStorage.removeItem('iptv_logged_in_as');
   saveCfg();
