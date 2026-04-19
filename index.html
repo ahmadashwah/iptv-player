@@ -1267,8 +1267,9 @@ body.login #loginScreen { display: flex; }
 /* ── TV / D-pad focus styles ─────────────────────────────────────────────── */
 *:focus { outline: none; }
 .tv-focus-ring:focus {
-  box-shadow: 0 0 0 3px #e50914, 0 0 0 6px rgba(229,9,20,.4) !important;
-  z-index: 10;
+  outline: 3px solid #e50914 !important;
+  outline-offset: 4px !important;
+  z-index: 20;
   position: relative;
 }
 .rail-item.tv-focus-ring:focus       { background: #2a2a2a; border-radius: 10px; }
@@ -1279,10 +1280,6 @@ body.login #loginScreen { display: flex; }
 .vod-item.tv-focus-ring:focus,
 .ser-item.tv-focus-ring:focus        { background: #1e1e1e; }
 .detail-ep-card.tv-focus-ring:focus  { background: #1e1e1e; }
-.detail-btn-play.tv-focus-ring:focus,
-.detail-btn-resume.tv-focus-ring:focus,
-.detail-btn-list.tv-focus-ring:focus,
-.cat-side-btn.tv-focus-ring:focus    { box-shadow: 0 0 0 3px #e50914, 0 0 0 6px rgba(229,9,20,.4) !important; }
 </style>
 </head>
 <body>
@@ -3900,9 +3897,10 @@ function afterLogin() {
     '.ch-item', '.vod-item', '.ser-item',
     '.cat-browse-card', '.detail-ep-card',
     '.detail-btn-play', '.detail-btn-resume', '.detail-btn-list',
-    '#detailWatchE1Btn', '.detail-season-btn',
+    '#detailWatchE1Btn', '#detailPlayBtn', '#detailResumeBtn', '#detailSaveBtn',
+    '.detail-season-btn', '.detail-btn-icon',
     '.cat-side-btn', '.sf-btn', 'input[type=text]',
-    '#detailBackBtn', '#detailSaveBtn',
+    '#detailBackBtn',
   ].join(',');
 
   // Mark every matching element as focusable
@@ -3918,6 +3916,23 @@ function afterLogin() {
   new MutationObserver(muts => muts.forEach(m =>
     m.addedNodes.forEach(n => { if (n.nodeType === 1) stamp(n); })
   )).observe(document.body, { childList: true, subtree: true });
+
+  // Track last focused TV element — restore focus if it gets lost
+  let _lastFocused = null;
+  document.addEventListener('focusin', e => {
+    if (e.target.matches(TV_SEL)) _lastFocused = e.target;
+  });
+  // If focus falls to body (element removed/re-rendered), restore it
+  document.addEventListener('focusout', () => {
+    setTimeout(() => {
+      if (document.activeElement === document.body && _lastFocused) {
+        // Try to find same button by id or class in current DOM
+        const byId = _lastFocused.id ? document.getElementById(_lastFocused.id) : null;
+        const target = byId || document.querySelector('.detail-btn-play:not([style*="none"]), #detailPlayBtn, .rail-item.active, .rail-item');
+        if (target && isVisible && isVisible(target)) target.focus({ preventScroll: true });
+      }
+    }, 50);
+  });
 
   // Spatial nearest-element finder
   function nearest(els, from, dir) {
