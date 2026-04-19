@@ -1265,15 +1265,13 @@ body.login #loginScreen { display: flex; }
 }
 
 /* ── TV / D-pad focus styles ─────────────────────────────────────────────── */
-.tv-focus-ring:focus,
-.tv-focus-ring:focus-visible {
-  outline: 3px solid #e50914 !important;
-  outline-offset: 3px;
-  box-shadow: 0 0 0 5px rgba(229,9,20,.35) !important;
+*:focus { outline: none; }
+.tv-focus-ring:focus {
+  box-shadow: 0 0 0 3px #e50914, 0 0 0 6px rgba(229,9,20,.4) !important;
   z-index: 10;
   position: relative;
 }
-.rail-item.tv-focus-ring:focus { background: #2a2a2a; border-radius: 10px; }
+.rail-item.tv-focus-ring:focus       { background: #2a2a2a; border-radius: 10px; }
 .cat-browse-card.tv-focus-ring:focus { transform: scale(1.07) translateY(-4px); }
 .thumb-card.tv-focus-ring:focus      { transform: scale(1.04); }
 .hcard-poster.tv-focus-ring:focus    { transform: scale(1.04); }
@@ -1281,8 +1279,10 @@ body.login #loginScreen { display: flex; }
 .vod-item.tv-focus-ring:focus,
 .ser-item.tv-focus-ring:focus        { background: #1e1e1e; }
 .detail-ep-card.tv-focus-ring:focus  { background: #1e1e1e; }
-/* hide default browser outline everywhere else */
-*:focus { outline: none; }
+.detail-btn-play.tv-focus-ring:focus,
+.detail-btn-resume.tv-focus-ring:focus,
+.detail-btn-list.tv-focus-ring:focus,
+.cat-side-btn.tv-focus-ring:focus    { box-shadow: 0 0 0 3px #e50914, 0 0 0 6px rgba(229,9,20,.4) !important; }
 </style>
 </head>
 <body>
@@ -2141,10 +2141,15 @@ function renderItems(items) {
   const list = id('channelList');
   list.innerHTML = '';
   list.appendChild(frag);
-  // Auto-focus first item for TV navigation
+  // Auto-focus first category (live) or first item (vod/series) for TV navigation
   setTimeout(() => {
-    const first = list.querySelector('.ch-item, .vod-item, .ser-item');
-    if (first) first.focus({ preventScroll: true });
+    const firstCat = document.querySelector('#catSidebar .cat-side-btn');
+    if (S.mode === 'live' && firstCat && firstCat.offsetParent !== null) {
+      firstCat.focus({ preventScroll: true });
+    } else {
+      const first = list.querySelector('.ch-item, .vod-item, .ser-item');
+      if (first) first.focus({ preventScroll: true });
+    }
   }, 80);
 }
 
@@ -2435,6 +2440,11 @@ async function openDetail(item, type) {
   document.body.classList.remove('home', 'loading', 'playing', 'panel-open', 'search-open', 'cat-browse');
   id('detailScreen').scrollTop = 0;
   setRailActive(null);
+  // Auto-focus play button for TV navigation
+  setTimeout(() => {
+    const playBtn = document.querySelector('#detailPlayBtn, #detailResumeBtn, #detailWatchE1Btn');
+    if (playBtn && playBtn.style.display !== 'none') playBtn.focus({ preventScroll: true });
+  }, 100);
 
   // Async TMDB enrichment — fills synopsis, backdrop, cast photos, ratings
   enrichDetailFromTMDB(item, type);
@@ -3876,8 +3886,8 @@ function afterLogin() {
     '.cat-browse-card', '.detail-ep-card',
     '.detail-btn-play', '.detail-btn-resume', '.detail-btn-list',
     '#detailWatchE1Btn', '.detail-season-btn',
-    '.sf-btn', '.btn', 'button', 'input[type=text]',
-    '#detailBackBtn',
+    '.cat-side-btn', '.sf-btn', 'input[type=text]',
+    '#detailBackBtn', '#detailSaveBtn',
   ].join(',');
 
   // Mark every matching element as focusable
@@ -3959,16 +3969,44 @@ function afterLogin() {
       e.preventDefault();
       const cur = document.activeElement;
 
-      // ArrowLeft from a list item → jump back to active rail item
+      // ArrowLeft from a list item → jump to category sidebar, or rail
       if (dir === 'left' && cur && cur.matches('.ch-item, .vod-item, .ser-item')) {
+        const firstCat = document.querySelector('#catSidebar .cat-side-btn');
+        if (firstCat && isVisible(firstCat)) { firstCat.focus({ preventScroll: true }); return; }
         const activeRail = document.querySelector('.rail-item.active') || document.querySelector('.rail-item');
         if (activeRail) { activeRail.focus({ preventScroll: true }); return; }
       }
 
-      // ArrowRight from a rail item → focus first list item
-      if (dir === 'right' && cur && cur.matches('.rail-item')) {
+      // ArrowLeft from category sidebar → jump to rail
+      if (dir === 'left' && cur && cur.matches('.cat-side-btn')) {
+        const activeRail = document.querySelector('.rail-item.active') || document.querySelector('.rail-item');
+        if (activeRail) { activeRail.focus({ preventScroll: true }); return; }
+      }
+
+      // ArrowRight from category sidebar → jump to first list item
+      if (dir === 'right' && cur && cur.matches('.cat-side-btn')) {
         const first = document.querySelector('#channelList .ch-item, #channelList .vod-item, #channelList .ser-item');
         if (first) { first.focus({ preventScroll: true }); first.scrollIntoView({ block: 'nearest' }); return; }
+      }
+
+      // ArrowRight from a rail item → focus first category or first list item
+      if (dir === 'right' && cur && cur.matches('.rail-item')) {
+        const firstCat = document.querySelector('#catSidebar .cat-side-btn');
+        if (firstCat && isVisible(firstCat)) { firstCat.focus({ preventScroll: true }); return; }
+        const first = document.querySelector('#channelList .ch-item, #channelList .vod-item, #channelList .ser-item');
+        if (first) { first.focus({ preventScroll: true }); first.scrollIntoView({ block: 'nearest' }); return; }
+      }
+
+      // ArrowUp from rail top → go to home screen rows
+      if (dir === 'up' && cur && cur.matches('.rail-item')) {
+        const homeCard = document.querySelector('.thumb-card, .hcard-poster');
+        if (homeCard && isVisible(homeCard)) { homeCard.focus({ preventScroll: true }); homeCard.scrollIntoView({ block: 'nearest' }); return; }
+      }
+
+      // ArrowDown from home screen cards → go to rail
+      if (dir === 'down' && cur && cur.matches('.thumb-card, .hcard-poster')) {
+        const activeRail = document.querySelector('.rail-item.active') || document.querySelector('.rail-item');
+        if (activeRail) { activeRail.focus({ preventScroll: true }); return; }
       }
 
       const els = visibleFocusables();
