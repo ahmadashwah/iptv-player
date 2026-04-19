@@ -1933,10 +1933,20 @@ function openPanel(mode) {
     document.body.classList.add('panel-open');
     id('panelTitle').textContent = titles[mode];
     loadCurrent();
+    // TV: focus first category after render
+    setTimeout(() => {
+      const firstCat = document.querySelector('#catSidebar .cat-side-btn');
+      if (firstCat) firstCat.focus({ preventScroll: true });
+    }, 150);
   } else {
     document.body.classList.add('cat-browse');
     id('catBrowseTitle').textContent = titles[mode] || mode;
     loadCatBrowse(mode);
+    // TV: focus first browse card after render
+    setTimeout(() => {
+      const first = document.querySelector('.cat-browse-card');
+      if (first) { first.focus({ preventScroll: true }); first.scrollIntoView({ block: 'nearest' }); }
+    }, 300);
   }
 }
 
@@ -3940,9 +3950,7 @@ function afterLogin() {
       node = node.parentElement;
     }
     const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0 &&
-           r.bottom > -50 && r.top < window.innerHeight + 50 &&
-           r.right  > -50 && r.left < window.innerWidth  + 50;
+    return r.width > 0 && r.height > 0;
   }
 
   function visibleFocusables() {
@@ -4014,7 +4022,7 @@ function afterLogin() {
       const target = from ? nearest(els, from, dir) : els[0];
       if (target) {
         target.focus({ preventScroll: true });
-        target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+        target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       }
       return;
     }
