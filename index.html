@@ -2033,6 +2033,13 @@ function renderCats() {
   sidebar.innerHTML = '';
   sidebar.appendChild(makeCatSideBtn('All', 'all'));
   modeData().cats.forEach(c => sidebar.appendChild(makeCatSideBtn(c.category_name, c.category_id)));
+  // TV: focus first category for live TV
+  if (S.mode === 'live') {
+    setTimeout(() => {
+      const first = sidebar.querySelector('.cat-side-btn');
+      if (first) first.focus({ preventScroll: true });
+    }, 50);
+  }
 }
 function makeCatSideBtn(label, catId) {
   const el = document.createElement('button');
@@ -2151,16 +2158,14 @@ function renderItems(items) {
   const list = id('channelList');
   list.innerHTML = '';
   list.appendChild(frag);
-  // Auto-focus first category (live) or first item (vod/series) for TV navigation
-  setTimeout(() => {
-    const firstCat = document.querySelector('#catSidebar .cat-side-btn');
-    if (S.mode === 'live' && firstCat && firstCat.offsetParent !== null) {
-      firstCat.focus({ preventScroll: true });
-    } else {
+  // For TV: only auto-focus list items in non-live modes
+  // Live TV focuses categories instead (handled in openPanel)
+  if (S.mode !== 'live') {
+    setTimeout(() => {
       const first = list.querySelector('.ch-item, .vod-item, .ser-item');
       if (first) first.focus({ preventScroll: true });
-    }
-  }, 80);
+    }, 80);
+  }
 }
 
 function makeLiveEl(ch) {
@@ -3976,6 +3981,18 @@ function afterLogin() {
     if (dir) {
       e.preventDefault();
       const cur = document.activeElement;
+
+      // Detail screen: ArrowDown from action buttons → episode list
+      if (dir === 'down' && cur && cur.matches('.detail-btn-play, .detail-btn-resume, .detail-btn-list, #detailWatchE1Btn, #detailSaveBtn')) {
+        const firstEp = document.querySelector('.detail-ep-card');
+        if (firstEp && isVisible(firstEp)) { firstEp.focus({ preventScroll: true }); firstEp.scrollIntoView({ block: 'nearest' }); return; }
+      }
+
+      // Detail screen: ArrowUp from episode list → action buttons
+      if (dir === 'up' && cur && cur.matches('.detail-ep-card')) {
+        const playBtn = document.querySelector('#detailPlayBtn:not([style*="none"]), #detailResumeBtn:not([style*="none"]), #detailWatchE1Btn:not([style*="none"])');
+        if (playBtn) { playBtn.focus({ preventScroll: true }); return; }
+      }
 
       // ArrowLeft from a list item → jump to category sidebar, or rail
       if (dir === 'left' && cur && cur.matches('.ch-item, .vod-item, .ser-item')) {
