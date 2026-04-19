@@ -95,15 +95,20 @@ class MainActivity : FragmentActivity() {
         webView.loadUrl("https://ashwahtv.pages.dev")
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        // Back button: tell JS first, don't use WebView history
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        // Intercept back button BEFORE WebView history handling
+        if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_DOWN) {
             webView.evaluateJavascript(
                 """document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));""",
                 null
             )
             return true
         }
+        return super.dispatchKeyEvent(event)
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK) return true
         return super.onKeyDown(keyCode, event)
     }
 
