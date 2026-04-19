@@ -3765,7 +3765,7 @@ function exitPlayer() {
   clearTimeout(S.epgTimer);
   setVideoIdle();
   clearSubtitles();
-  // Exit fullscreen
+  // Exit fullscreen if still active
   if (document.fullscreenElement || document.webkitFullscreenElement) {
     (document.exitFullscreen || document.webkitExitFullscreen).call(document).catch(() => {});
   }
@@ -3855,7 +3855,7 @@ function fmtTime(secs) {
     if (e.key === 'ArrowRight' || e.key === 'l') { e.preventDefault(); skipVideo(10); }
     if (e.key === 'm') toggleMute();
     if (e.key === 'f') toggleFullscreen();
-    if (e.key === 'Escape' && document.fullscreenElement) document.exitFullscreen();
+    // Fullscreen escape handled by TV nav back handler below
   });
 })();
 
@@ -4200,7 +4200,7 @@ function afterLogin() {
       return;
     }
 
-    // Back / Escape
+    // Back / Escape — layered navigation stack
     if (e.key === 'Escape' || e.key === 'GoBack') {
       e.preventDefault();
       const body = document.body;
@@ -4208,12 +4208,36 @@ function afterLogin() {
         const rail = document.querySelector('.rail-item.active') || document.querySelector('.rail-item');
         if (rail) rail.focus({ preventScroll: true });
       };
+      const focusPlayBtn = () => {
+        setTimeout(() => {
+          const btn = document.querySelector('#detailWatchE1Btn:not([style*="none"]), #detailPlayBtn:not([style*="none"]), #detailResumeBtn:not([style*="none"])');
+          if (btn) btn.focus({ preventScroll: true });
+        }, 150);
+      };
+
+      // Step 1: if fullscreen → just exit fullscreen, stay on player
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        (document.exitFullscreen || document.webkitExitFullscreen).call(document).catch(() => {});
+        return;
+      }
+
+      // Step 2: if playing (not fullscreen) → stop player, go to detail page
       if (body.classList.contains('playing') || body.classList.contains('loading')) {
-        exitPlayer?.(); setTimeout(focusRail, 200);
-      } else if (body.classList.contains('settings')) {
+        exitPlayer?.();
+        focusPlayBtn();
+        return;
+      }
+
+      // Step 3: if on detail page → go back to content list
+      if (body.classList.contains('detail')) {
+        closeDetail?.();
+        setTimeout(focusRail, 100);
+        return;
+      }
+
+      // Other screens → back to rail
+      if (body.classList.contains('settings')) {
         closeSettings?.(); hideSeriesModal?.(); setTimeout(focusRail, 100);
-      } else if (body.classList.contains('detail')) {
-        closeDetail?.(); setTimeout(focusRail, 100);
       } else if (body.classList.contains('panel-open') || body.classList.contains('search-open')) {
         closePanel?.(); setTimeout(focusRail, 100);
       } else if (body.classList.contains('cat-browse')) {
