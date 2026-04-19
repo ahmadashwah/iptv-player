@@ -1341,7 +1341,7 @@ body.login #loginScreen { display: flex; }
     </div>
     <div class="login-error" id="loginError"></div>
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In</button>
-    <div class="login-settings-link" onclick="loginManual()">Enter credentials manually instead</div>
+    <div class="login-settings-link" onclick="loginManual()" tabindex="0" role="button">Enter credentials manually instead</div>
   </div>
 </div>
 
@@ -3906,8 +3906,8 @@ function afterLogin() {
     '.detail-btn-play', '.detail-btn-resume', '.detail-btn-list',
     '#detailWatchE1Btn', '#detailPlayBtn', '#detailResumeBtn', '#detailSaveBtn',
     '.detail-season-btn', '.detail-btn-icon',
-    '.cat-side-btn', '.sf-btn', 'input[type=text]',
-    '#detailBackBtn',
+    '.cat-side-btn', '.sf-btn', 'input[type=text]', 'input[type=email]', 'input[type=password]',
+    '#detailBackBtn', '#loginBtn', '.login-settings-link',
   ].join(',');
 
   // Mark every matching element as focusable
@@ -4031,6 +4031,19 @@ function afterLogin() {
     if (dir) {
       e.preventDefault();
       const cur = document.activeElement;
+
+      // Login screen: strict vertical navigation between the 4 elements
+      if (document.body.classList.contains('login')) {
+        const loginEls = ['loginEmail', 'loginPassword', 'loginBtn', '.login-settings-link']
+          .map(s => s.startsWith('.') ? document.querySelector(s) : document.getElementById(s))
+          .filter(Boolean);
+        const idx = loginEls.indexOf(cur);
+        if (idx !== -1) {
+          if (dir === 'down' && idx < loginEls.length - 1) { loginEls[idx + 1].focus(); return; }
+          if (dir === 'up'   && idx > 0)                   { loginEls[idx - 1].focus(); return; }
+          return; // block left/right on login screen
+        }
+      }
 
       // Detail screen: ArrowDown from action buttons → episode list
       if (dir === 'down' && cur && cur.matches('.detail-btn-play, .detail-btn-resume, .detail-btn-list, #detailWatchE1Btn, #detailSaveBtn')) {
