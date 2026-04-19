@@ -3906,8 +3906,9 @@ function afterLogin() {
     '.detail-btn-play', '.detail-btn-resume', '.detail-btn-list',
     '#detailWatchE1Btn', '#detailPlayBtn', '#detailResumeBtn', '#detailSaveBtn',
     '.detail-season-btn',
-    '.cat-side-btn', '.sf-btn', 'input[type=text]', 'input[type=email]', 'input[type=password]',
-    '#loginBtn', '.login-settings-link',
+    '.cat-side-btn', '.sf-btn',
+    'input[type=text]', 'input[type=email]', 'input[type=password]', 'input[type=number]', 'select', 'textarea',
+    '#loginBtn', '.login-settings-link', '.btn',
   ].join(',');
 
   // Mark every matching element as focusable
@@ -4069,6 +4070,14 @@ function afterLogin() {
       if (dir === 'up' && cur && cur.matches('.detail-ep-card')) {
         const playBtn = document.querySelector('#detailPlayBtn:not([style*="none"]), #detailResumeBtn:not([style*="none"]), #detailWatchE1Btn:not([style*="none"])');
         if (playBtn) { playBtn.focus({ preventScroll: true }); return; }
+      }
+
+      // Rail: Up/Down navigates all rail items in order (including Settings)
+      if (cur && cur.matches('.rail-item')) {
+        const railItems = Array.from(document.querySelectorAll('.rail-item')).filter(isVisible);
+        const idx = railItems.indexOf(cur);
+        if (dir === 'down' && idx < railItems.length - 1) { railItems[idx + 1].focus({ preventScroll: true }); return; }
+        if (dir === 'up'   && idx > 0)                    { railItems[idx - 1].focus({ preventScroll: true }); return; }
       }
 
       // ArrowLeft from a list item → jump to category sidebar, or rail
