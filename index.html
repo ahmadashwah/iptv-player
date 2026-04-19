@@ -1602,7 +1602,7 @@ body.login #loginScreen { display: flex; }
     <div id="detailHero">
       <div id="detailHeroBg"></div>
       <div id="detailHeroGrad"></div>
-      <button id="detailBackBtn" onclick="closeDetail()">
+      <button id="detailBackBtn" onclick="closeDetail()" tabindex="-1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
       <div id="detailHeroContent">
@@ -3905,9 +3905,9 @@ function afterLogin() {
     '.cat-browse-card', '.detail-ep-card',
     '.detail-btn-play', '.detail-btn-resume', '.detail-btn-list',
     '#detailWatchE1Btn', '#detailPlayBtn', '#detailResumeBtn', '#detailSaveBtn',
-    '.detail-season-btn', '.detail-btn-icon',
+    '.detail-season-btn',
     '.cat-side-btn', '.sf-btn', 'input[type=text]', 'input[type=email]', 'input[type=password]',
-    '#detailBackBtn', '#loginBtn', '.login-settings-link',
+    '#loginBtn', '.login-settings-link',
   ].join(',');
 
   // Mark every matching element as focusable
@@ -4045,6 +4045,20 @@ function afterLogin() {
         }
       }
 
+      // Detail screen: Left/Right between action buttons
+      const DETAIL_BTNS = '#detailPlayBtn, #detailResumeBtn, #detailWatchE1Btn, #detailSaveBtn';
+      if ((dir === 'left' || dir === 'right') && cur && cur.matches(DETAIL_BTNS)) {
+        const btns = Array.from(document.querySelectorAll(DETAIL_BTNS))
+          .filter(b => b.style.display !== 'none' && isVisible(b));
+        const idx = btns.indexOf(cur);
+        if (dir === 'right' && idx < btns.length - 1) { btns[idx + 1].focus({ preventScroll: true }); return; }
+        if (dir === 'left'  && idx > 0)               { btns[idx - 1].focus({ preventScroll: true }); return; }
+        if (dir === 'left'  && idx === 0) { // go back to rail
+          const rail = document.querySelector('.rail-item.active') || document.querySelector('.rail-item');
+          if (rail) { rail.focus({ preventScroll: true }); return; }
+        }
+      }
+
       // Detail screen: ArrowDown from action buttons → episode list
       if (dir === 'down' && cur && cur.matches('.detail-btn-play, .detail-btn-resume, .detail-btn-list, #detailWatchE1Btn, #detailSaveBtn')) {
         const firstEp = document.querySelector('.detail-ep-card');
@@ -4077,8 +4091,13 @@ function afterLogin() {
         if (first) { first.focus({ preventScroll: true }); first.scrollIntoView({ block: 'nearest' }); return; }
       }
 
-      // ArrowRight from a rail item → focus first category or first list item
+      // ArrowRight from a rail item → detail buttons, or categories, or list
       if (dir === 'right' && cur && cur.matches('.rail-item')) {
+        // If detail screen is open, go to play button
+        if (document.body.classList.contains('detail')) {
+          const playBtn = document.querySelector('#detailWatchE1Btn:not([style*="none"]), #detailPlayBtn:not([style*="none"]), #detailResumeBtn:not([style*="none"])');
+          if (playBtn) { playBtn.focus({ preventScroll: true }); return; }
+        }
         const firstCat = document.querySelector('#catSidebar .cat-side-btn');
         if (firstCat && isVisible(firstCat)) { firstCat.focus({ preventScroll: true }); return; }
         const first = document.querySelector('#channelList .ch-item, #channelList .vod-item, #channelList .ser-item');
