@@ -1338,7 +1338,9 @@ body.login #loginScreen { display: flex; }
     <div class="login-field" style="position:relative">
       <label for="loginPassword">Password</label>
       <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" style="padding-right:44px">
-      <button type="button" onclick="(function(){const i=document.getElementById('loginPassword');const b=document.getElementById('loginPassToggle');i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'👁':'🙈';})()" id="loginPassToggle" tabindex="-1" style="position:absolute;right:10px;bottom:8px;background:none;border:none;cursor:pointer;font-size:16px;color:#888;padding:4px;">👁</button>
+      <button type="button" id="loginPassToggle" tabindex="-1" onclick="(function(){const i=document.getElementById('loginPassword');const b=document.getElementById('loginPassToggle');const show=i.type==='password';i.type=show?'text':'password';b.innerHTML=show?'<svg width=18 height=18 viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\'/><circle cx=\'12\' cy=\'12\' r=\'3\'/><line x1=\'2\' y1=\'2\' x2=\'22\' y2=\'22\'/></svg>':'<svg width=18 height=18 viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\'/><circle cx=\'12\' cy=\'12\' r=\'3\'/></svg>';})()" style="position:absolute;right:10px;bottom:8px;background:none;border:none;cursor:pointer;color:#888;padding:4px;display:flex;align-items:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
     </div>
     <div class="login-error" id="loginError"></div>
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In</button>
@@ -1545,16 +1547,28 @@ body.login #loginScreen { display: flex; }
         <div class="field-note">🍓 Pi proxy URL is fetched automatically.</div>
       </div>
       <div class="field">
+        <div class="setting-toggle-row">
+          <div>
+            <div class="setting-toggle-label">TMDB Integration</div>
+            <div class="setting-toggle-sub">Fetch English titles, descriptions and artwork from TMDB</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="cfgTmdbEnabled" onchange="toggleTmdbSetting(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="field" id="tmdbKeyField" style="opacity:0.35;pointer-events:none">
         <label>TMDB API Key <span style="color:var(--muted);font-weight:400;text-transform:none">(for Discover rows)</span></label>
         <input type="text" id="cfgTmdbKey" placeholder="Paste your TMDB API key…" autocomplete="off">
       </div>
       <div class="field">
         <label>Language</label>
         <div class="lang-picker">
-          <button id="langEnBtn" class="lang-btn" onclick="setLanguage('en')">🇬🇧 English</button>
-          <button id="langArBtn" class="lang-btn" onclick="setLanguage('ar')">🇸🇦 العربية</button>
+          <button id="langEnBtn" class="lang-btn" onclick="setLanguage('en')" style="opacity:0.35;pointer-events:none">English</button>
+          <button id="langArBtn" class="lang-btn active" onclick="setLanguage('ar')">العربية</button>
         </div>
-        <div class="field-note" style="margin-top:6px">Affects titles and synopsis on content pages. English shows transliterated names for Arabic content (e.g. "El Leaba" for اللعبة).</div>
+        <div class="field-note" style="margin-top:6px">Affects titles and synopsis on content pages.</div>
       </div>
       <div class="field">
         <label>Playback Options</label>
@@ -1838,9 +1852,10 @@ function saveCfg() {
     server:     S.cfg.server     || '',
     username:   S.cfg.username   || '',
     liveProxy:  S.cfg.liveProxy  || '',
-    epgEnabled: S.cfg.epgEnabled || false,
-    tmdbKey:    S.cfg.tmdbKey    || '',
-    language:   S.cfg.language   || 'en',
+    epgEnabled:   S.cfg.epgEnabled   || false,
+    tmdbEnabled:  S.cfg.tmdbEnabled  || false,
+    tmdbKey:      S.cfg.tmdbKey      || '',
+    language:     S.cfg.language     || 'ar',
   }));
 }
 function saveLastPage(page) {
@@ -2480,7 +2495,7 @@ function cleanTMDBQuery(raw) {
 }
 
 async function enrichDetailFromTMDB(item, type) {
-  if (!S.cfg.tmdbKey) return;
+  if (!S.cfg.tmdbEnabled || !S.cfg.tmdbKey) return;
   const name = cleanTMDBQuery(item.name || '');
   if (!name) return;
   const searchType = type === 'series' ? 'tv' : 'movie';
@@ -2599,9 +2614,23 @@ function closeDetail() {
   if (detailPrevState === 'home') {
     document.body.classList.add('home');
     setRailActive('home');
+    setTimeout(() => document.querySelector('.rail-item.active, .rail-item')?.focus({ preventScroll: true }), 100);
   } else if (detailPrevState === 'cat-browse') {
     document.body.classList.add('cat-browse');
     setRailActive(S.mode);
+    // Re-focus the last focused card
+    setTimeout(() => {
+      const card = document.querySelector('.cat-browse-card');
+      if (card) card.focus({ preventScroll: true });
+    }, 100);
+  } else {
+    // Default: go back to content list
+    document.body.classList.add('cat-browse');
+    setRailActive(S.mode);
+    setTimeout(() => {
+      const card = document.querySelector('.cat-browse-card');
+      if (card) card.focus({ preventScroll: true });
+    }, 100);
   }
 }
 
@@ -2788,7 +2817,7 @@ function queueCardTitle(nameEl, rawName, type) {
 
 async function _drainCardQueue() {
   _cardTitleTimer = null;
-  if (!_cardTitleQueue.length) return;
+  if (!_cardTitleQueue.length || !S.cfg.tmdbEnabled) return;
   const { nameEl, query, type } = _cardTitleQueue.shift();
   if (document.contains(nameEl)) {
     const st = type === 'series' ? 'tv' : 'movie';
@@ -2820,7 +2849,7 @@ async function fetchTMDB(path, forceEnglish) {
 }
 
 async function loadTMDBRows() {
-  if (!S.cfg.tmdbKey) return;
+  if (!S.cfg.tmdbEnabled || !S.cfg.tmdbKey) return;
   const [movies, shows] = await Promise.all([
     fetchTMDB('/trending/movie/week'),
     fetchTMDB('/trending/tv/week'),
@@ -3138,6 +3167,10 @@ function setVideoPlaying() {
   document.body.classList.remove('loading');
   document.body.classList.add('playing');
   showControls();
+  // Auto fullscreen for TV experience
+  const el = document.documentElement;
+  if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
 }
 function setVideoIdle() {
   clearTimeout(_loadingTimeout);
@@ -3340,8 +3373,10 @@ function openSettings() {
   id('cfgServer').value = S.cfg.server   || '';
   id('cfgUser').value   = S.cfg.username || '';
   id('cfgPass').value   = S.password     || '';
-  id('cfgEpgEnabled').checked = !!S.cfg.epgEnabled;
+  id('cfgEpgEnabled').checked  = !!S.cfg.epgEnabled;
+  id('cfgTmdbEnabled').checked = !!S.cfg.tmdbEnabled;
   id('cfgTmdbKey').value = S.cfg.tmdbKey || '';
+  applyTmdbToggleUI(!!S.cfg.tmdbEnabled);
   syncLangButtons();
   const dot  = id('piDot');
   const text = id('piStatusText');
@@ -3393,7 +3428,8 @@ function saveSettings() {
   S.cfg.server   = server;
   S.cfg.username = username;
   S.password     = password;
-  S.cfg.tmdbKey  = id('cfgTmdbKey').value.trim();
+  S.cfg.tmdbKey     = id('cfgTmdbKey').value.trim();
+  S.cfg.tmdbEnabled = !!id('cfgTmdbEnabled').checked;
   localStorage.setItem('iptv_pass', password);
   saveCfg();
   closeSettings();
@@ -3405,6 +3441,21 @@ function toggleEpgSetting(enabled) {
   S.cfg.epgEnabled = enabled;
   document.body.classList.toggle('epg-enabled', enabled);
   saveCfg();
+}
+
+function applyTmdbToggleUI(enabled) {
+  const keyField = id('tmdbKeyField');
+  const enBtn    = id('langEnBtn');
+  if (keyField) { keyField.style.opacity = enabled ? '1' : '0.35'; keyField.style.pointerEvents = enabled ? '' : 'none'; }
+  if (enBtn)    { enBtn.style.opacity = enabled ? '1' : '0.35';    enBtn.style.pointerEvents    = enabled ? '' : 'none'; }
+  // Force Arabic if TMDB is off
+  if (!enabled) { S.cfg.language = 'ar'; syncLangButtons(); }
+}
+
+function toggleTmdbSetting(enabled) {
+  S.cfg.tmdbEnabled = enabled;
+  saveCfg();
+  applyTmdbToggleUI(enabled);
 }
 
 function setLanguage(lang) {
@@ -3714,8 +3765,16 @@ function exitPlayer() {
   clearTimeout(S.epgTimer);
   setVideoIdle();
   clearSubtitles();
+  // Exit fullscreen
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document).catch(() => {});
+  }
   if (currentDetailItem) {
     document.body.classList.add('detail');
+    setTimeout(() => {
+      const playBtn = document.querySelector('#detailWatchE1Btn:not([style*="none"]), #detailPlayBtn:not([style*="none"]), #detailResumeBtn:not([style*="none"])');
+      if (playBtn) playBtn.focus({ preventScroll: true });
+    }, 150);
   }
   const hlsToDestroy = S.hls;
   S.hls = null;

@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:2:1-36:12
-INJECTED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:2:1-36:12
-INJECTED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:2:1-36:12
-INJECTED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:2:1-36:12
+ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:2:1-37:12
+INJECTED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:2:1-37:12
+INJECTED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:2:1-37:12
+INJECTED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:2:1-37:12
 MERGED from [androidx.leanback:leanback:1.0.0] /Users/ahmadashwah/.gradle/caches/transforms-3/d72ba685175ea6419f0cf81d1199fc76/transformed/leanback-1.0.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.fragment:fragment:1.6.2] /Users/ahmadashwah/.gradle/caches/transforms-3/9170935a516d5926a250cc219878fe80/transformed/fragment-1.6.2/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.fragment:fragment-ktx:1.6.2] /Users/ahmadashwah/.gradle/caches/transforms-3/e1ee428df5ff2741a4cb8b1612337999/transformed/jetified-fragment-ktx-1.6.2/AndroidManifest.xml:17:1-22:12
@@ -73,8 +73,8 @@ ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidMa
 	android:name
 		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:13:9-52
 application
-ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:16:5-35:19
-INJECTED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:16:5-35:19
+ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:16:5-36:19
+INJECTED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:16:5-36:19
 MERGED from [androidx.core:core:1.12.0] /Users/ahmadashwah/.gradle/caches/transforms-3/808f25e33273cf777e1c687f415f5885/transformed/core-1.12.0/AndroidManifest.xml:28:5-89
 MERGED from [androidx.core:core:1.12.0] /Users/ahmadashwah/.gradle/caches/transforms-3/808f25e33273cf777e1c687f415f5885/transformed/core-1.12.0/AndroidManifest.xml:28:5-89
 MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/ahmadashwah/.gradle/caches/transforms-3/c95c70fe816f2902c8434f722301538d/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
@@ -89,6 +89,8 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/ahmadashwah/.gradle/
 		ADDED from [androidx.core:core:1.12.0] /Users/ahmadashwah/.gradle/caches/transforms-3/808f25e33273cf777e1c687f415f5885/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
 	android:label
 		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:19:9-41
+	android:hardwareAccelerated
+		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:22:9-43
 	android:icon
 		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:18:9-43
 	android:allowBackup
@@ -98,25 +100,25 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/ahmadashwah/.gradle/
 	android:usesCleartextTraffic
 		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:21:9-44
 activity#com.ashwah.tv.MainActivity
-ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:23:9-33:20
+ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:24:9-34:20
 	android:launchMode
-		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:27:13-44
+		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:28:13-44
 	android:exported
-		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:26:13-36
+		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:27:13-36
 	android:configChanges
-		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:25:13-103
+		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:26:13-103
 	android:name
-		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:24:13-41
+		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:25:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LEANBACK_LAUNCHER
-ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:29:13-32:29
+ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:30:13-33:29
 action#android.intent.action.MAIN
-ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:30:17-69
+ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:31:17-69
 	android:name
-		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:30:25-66
+		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:31:25-66
 category#android.intent.category.LEANBACK_LAUNCHER
-ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:31:17-86
+ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:32:17-86
 	android:name
-		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:31:27-83
+		ADDED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:32:27-83
 uses-sdk
 INJECTED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml

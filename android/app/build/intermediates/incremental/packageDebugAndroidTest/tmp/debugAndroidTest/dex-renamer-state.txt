@@ -1,0 +1,4 @@
+#Sun Apr 19 09:44:13 EDT 2026
+base.0=/Users/ahmadashwah/Documents/code/iptv/android/app/build/intermediates/dex/debugAndroidTest/mergeProjectDexDebugAndroidTest/0/classes.dex
+path.0=0/classes.dex
+renamed.0=classes.dex
