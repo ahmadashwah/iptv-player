@@ -1,0 +1,140 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.ashwah.tv"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="21"
+9        android:targetSdkVersion="34" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:4:5-67
+11-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:4:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:5:5-79
+12-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:5:22-76
+13
+14    <!-- Required: marks this as a TV app -->
+15    <uses-feature
+15-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:8:5-10:35
+16        android:name="android.software.leanback"
+16-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:9:9-49
+17        android:required="true" />
+17-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:10:9-32
+18    <!-- TV remotes don't have touchscreens -->
+19    <uses-feature
+19-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:12:5-14:36
+20        android:name="android.hardware.touchscreen"
+20-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:13:9-52
+21        android:required="false" />
+21-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:14:9-33
+22
+23    <permission
+23-->[androidx.core:core:1.12.0] /Users/ahmadashwah/.gradle/caches/transforms-3/808f25e33273cf777e1c687f415f5885/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+24        android:name="com.ashwah.tv.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+24-->[androidx.core:core:1.12.0] /Users/ahmadashwah/.gradle/caches/transforms-3/808f25e33273cf777e1c687f415f5885/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+25        android:protectionLevel="signature" />
+25-->[androidx.core:core:1.12.0] /Users/ahmadashwah/.gradle/caches/transforms-3/808f25e33273cf777e1c687f415f5885/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+26
+27    <uses-permission android:name="com.ashwah.tv.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+27-->[androidx.core:core:1.12.0] /Users/ahmadashwah/.gradle/caches/transforms-3/808f25e33273cf777e1c687f415f5885/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+27-->[androidx.core:core:1.12.0] /Users/ahmadashwah/.gradle/caches/transforms-3/808f25e33273cf777e1c687f415f5885/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+28
+29    <application
+29-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:16:5-35:19
+30        android:allowBackup="false"
+30-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:17:9-36
+31        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+31-->[androidx.core:core:1.12.0] /Users/ahmadashwah/.gradle/caches/transforms-3/808f25e33273cf777e1c687f415f5885/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
+32        android:debuggable="true"
+33        android:extractNativeLibs="true"
+34        android:icon="@mipmap/ic_launcher"
+34-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:18:9-43
+35        android:label="@string/app_name"
+35-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:19:9-41
+36        android:testOnly="true"
+37        android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+37-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:20:9-67
+38        android:usesCleartextTraffic="true" >
+38-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:21:9-44
+39        <activity
+39-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:23:9-33:20
+40            android:name="com.ashwah.tv.MainActivity"
+40-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:24:13-41
+41            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode"
+41-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:25:13-103
+42            android:exported="true"
+42-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:26:13-36
+43            android:launchMode="singleTask" >
+43-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:27:13-44
+44
+45            <!-- Shows up on Google TV home screen -->
+46            <intent-filter>
+46-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:29:13-32:29
+47                <action android:name="android.intent.action.MAIN" />
+47-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:30:17-69
+47-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:30:25-66
+48
+49                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+49-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:31:17-86
+49-->/Users/ahmadashwah/Documents/code/iptv/android/app/src/main/AndroidManifest.xml:31:27-83
+50            </intent-filter>
+51        </activity>
+52
+53        <provider
+53-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:24:9-32:20
+54            android:name="androidx.startup.InitializationProvider"
+54-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:25:13-67
+55            android:authorities="com.ashwah.tv.androidx-startup"
+55-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:26:13-68
+56            android:exported="false" >
+56-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:27:13-37
+57            <meta-data
+57-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
+58                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+58-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
+59                android:value="androidx.startup" />
+59-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
+60        </provider>
+61
+62        <receiver
+62-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
+63            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+63-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
+64            android:directBootAware="false"
+64-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
+65            android:enabled="true"
+65-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
+66            android:exported="true"
+66-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
+67            android:permission="android.permission.DUMP" >
+67-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
+68            <intent-filter>
+68-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
+69                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+69-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
+69-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
+70            </intent-filter>
+71            <intent-filter>
+71-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
+72                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+72-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
+72-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
+73            </intent-filter>
+74            <intent-filter>
+74-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
+75                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+75-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
+75-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
+76            </intent-filter>
+77            <intent-filter>
+77-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
+78                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+78-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
+78-->[androidx.profileinstaller:profileinstaller:1.3.0] /Users/ahmadashwah/.gradle/caches/transforms-3/20fdc5f449a51857d21c008767a0c843/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:25-92
+79            </intent-filter>
+80        </receiver>
+81    </application>
+82
+83</manifest>

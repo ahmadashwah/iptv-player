@@ -3916,19 +3916,29 @@ function afterLogin() {
     return best;
   }
 
+  function isVisible(el) {
+    // Walk up and check no ancestor is display:none / visibility:hidden
+    let node = el;
+    while (node && node !== document.body) {
+      const st = getComputedStyle(node);
+      if (st.display === 'none' || st.visibility === 'hidden') return false;
+      node = node.parentElement;
+    }
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 &&
+           r.bottom > -50 && r.top < window.innerHeight + 50 &&
+           r.right  > -50 && r.left < window.innerWidth  + 50;
+  }
+
   function visibleFocusables() {
-    return Array.from(document.querySelectorAll(TV_SEL)).filter(el => {
-      if (el.offsetParent === null && el.tagName !== 'BUTTON') return false;
-      const r = el.getBoundingClientRect();
-      return r.width > 0 && r.height > 0 &&
-             r.bottom > 0 && r.top < window.innerHeight + 400 &&
-             r.right  > 0 && r.left < window.innerWidth  + 400;
-    });
+    return Array.from(document.querySelectorAll(TV_SEL)).filter(isVisible);
   }
 
   function focusFirst() {
-    const els = visibleFocusables();
-    if (els[0]) { els[0].focus({ preventScroll: true }); els[0].scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+    // Prefer rail item, otherwise first visible focusable
+    const rail = document.querySelector('.rail-item');
+    const target = (rail && isVisible(rail)) ? rail : visibleFocusables()[0];
+    if (target) { target.focus({ preventScroll: true }); }
   }
 
   // Auto-focus first element when screen changes
@@ -3982,6 +3992,7 @@ function afterLogin() {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 refreshTunnelUrl();
+setTimeout(() => document.querySelector('.rail-item')?.focus(), 300);
 syncLangButtons();
 if (S.cfg.epgEnabled) document.body.classList.add('epg-enabled');
 refreshContinueRow();

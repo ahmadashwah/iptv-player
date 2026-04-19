@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.ashwah.tv.app-mergeDebugResources-26:/values-v19/values-v19.xml",
+            "map": [
+                {
+                    "source": "/Users/ahmadashwah/.gradle/caches/transforms-3/d72ba685175ea6419f0cf81d1199fc76/transformed/leanback-1.0.0/res/values-v19/values-v19.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "10",
+                        "endColumns": "12",
+                        "endOffsets": "659"
+                    }
+                }
+            ]
+        }
+    ]
+}
