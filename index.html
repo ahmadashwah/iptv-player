@@ -2141,6 +2141,11 @@ function renderItems(items) {
   const list = id('channelList');
   list.innerHTML = '';
   list.appendChild(frag);
+  // Auto-focus first item for TV navigation
+  setTimeout(() => {
+    const first = list.querySelector('.ch-item, .vod-item, .ser-item');
+    if (first) first.focus({ preventScroll: true });
+  }, 80);
 }
 
 function makeLiveEl(ch) {
@@ -3952,8 +3957,21 @@ function afterLogin() {
 
     if (dir) {
       e.preventDefault();
-      const els = visibleFocusables();
       const cur = document.activeElement;
+
+      // ArrowLeft from a list item → jump back to active rail item
+      if (dir === 'left' && cur && cur.matches('.ch-item, .vod-item, .ser-item')) {
+        const activeRail = document.querySelector('.rail-item.active') || document.querySelector('.rail-item');
+        if (activeRail) { activeRail.focus({ preventScroll: true }); return; }
+      }
+
+      // ArrowRight from a rail item → focus first list item
+      if (dir === 'right' && cur && cur.matches('.rail-item')) {
+        const first = document.querySelector('#channelList .ch-item, #channelList .vod-item, #channelList .ser-item');
+        if (first) { first.focus({ preventScroll: true }); first.scrollIntoView({ block: 'nearest' }); return; }
+      }
+
+      const els = visibleFocusables();
       const from = (cur && cur !== document.body && els.includes(cur)) ? cur : null;
       const target = from ? nearest(els, from, dir) : els[0];
       if (target) {
