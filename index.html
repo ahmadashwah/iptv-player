@@ -4215,20 +4215,17 @@ function afterLogin() {
         }, 150);
       };
 
-      // Step 1: if fullscreen → just exit fullscreen, stay on player
-      if (document.fullscreenElement || document.webkitFullscreenElement) {
-        (document.exitFullscreen || document.webkitExitFullscreen).call(document).catch(() => {});
-        return;
-      }
-
-      // Step 2: if playing (not fullscreen) → stop player, go to detail page
+      // Step 1: if playing → exit player + fullscreen, go to detail page
       if (body.classList.contains('playing') || body.classList.contains('loading')) {
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document).catch(() => {});
+        }
         exitPlayer?.();
         focusPlayBtn();
         return;
       }
 
-      // Step 3: if on detail page → go back to content list
+      // Step 2: if on detail page → go back to content list
       if (body.classList.contains('detail')) {
         closeDetail?.();
         setTimeout(focusRail, 100);
