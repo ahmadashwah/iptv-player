@@ -3968,8 +3968,13 @@ function afterLogin() {
     }, 50);
   });
 
-  // Keep indicator in sync when page scrolls or resizes
-  window.addEventListener('scroll', () => updateIndicator(document.activeElement), true);
+  // Keep indicator in sync when page scrolls or resizes (throttled)
+  let _scrollRaf = false;
+  window.addEventListener('scroll', () => {
+    if (_scrollRaf) return;
+    _scrollRaf = true;
+    requestAnimationFrame(() => { updateIndicator(document.activeElement); _scrollRaf = false; });
+  }, true);
   window.addEventListener('resize', () => updateIndicator(document.activeElement));
 
   // Spatial nearest-element finder
@@ -4000,15 +4005,8 @@ function afterLogin() {
   }
 
   function isVisible(el) {
-    // Walk up and check no ancestor is display:none / visibility:hidden
-    let node = el;
-    while (node && node !== document.body) {
-      const st = getComputedStyle(node);
-      if (st.display === 'none' || st.visibility === 'hidden') return false;
-      node = node.parentElement;
-    }
     const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0;
+    return r.width > 0 && r.height > 0 && r.bottom > 0 && r.right > 0;
   }
 
   function visibleFocusables() {
