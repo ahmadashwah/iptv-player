@@ -1266,12 +1266,7 @@ body.login #loginScreen { display: flex; }
 
 /* ── TV / D-pad focus styles ─────────────────────────────────────────────── */
 *:focus { outline: none; }
-.tv-focus-ring:focus {
-  outline: 3px solid #e50914 !important;
-  outline-offset: 4px !important;
-  z-index: 20;
-  position: relative;
-}
+/* Highlight states (no outline — floating indicator handles the ring) */
 .rail-item.tv-focus-ring:focus       { background: #2a2a2a; border-radius: 10px; }
 .cat-browse-card.tv-focus-ring:focus { transform: scale(1.07) translateY(-4px); }
 .thumb-card.tv-focus-ring:focus      { transform: scale(1.04); }
@@ -1280,9 +1275,21 @@ body.login #loginScreen { display: flex; }
 .vod-item.tv-focus-ring:focus,
 .ser-item.tv-focus-ring:focus        { background: #1e1e1e; }
 .detail-ep-card.tv-focus-ring:focus  { background: #1e1e1e; }
+/* Floating focus ring — always on top, never clipped */
+#tv-focus-indicator {
+  position: fixed;
+  pointer-events: none;
+  border: 3px solid #e50914;
+  border-radius: 6px;
+  box-shadow: 0 0 0 2px rgba(229,9,20,0.3);
+  z-index: 99999;
+  transition: top 0.08s, left 0.08s, width 0.08s, height 0.08s;
+  display: none;
+}
 </style>
 </head>
 <body>
+<div id="tv-focus-indicator"></div>
 
 <!-- ── MOBILE TOP BAR ────────────────────────────────────────── -->
 <div id="mobileTopBar">
@@ -3917,22 +3924,50 @@ function afterLogin() {
     m.addedNodes.forEach(n => { if (n.nodeType === 1) stamp(n); })
   )).observe(document.body, { childList: true, subtree: true });
 
-  // Track last focused TV element — restore focus if it gets lost
+  // ── Floating focus indicator ────────────────────────────────────────────────
+  const _ind = document.getElementById('tv-focus-indicator');
+  const PAD  = 5; // padding around element in px
+
+  function updateIndicator(el) {
+    if (!el || el === document.body) { _ind.style.display = 'none'; return; }
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) { _ind.style.display = 'none'; return; }
+    _ind.style.display = 'block';
+    _ind.style.left    = (r.left   - PAD) + 'px';
+    _ind.style.top     = (r.top    - PAD) + 'px';
+    _ind.style.width   = (r.width  + PAD * 2) + 'px';
+    _ind.style.height  = (r.height + PAD * 2) + 'px';
+  }
+
+  // ── Track last focused element & restore if lost ─────────────────────────────
   let _lastFocused = null;
   document.addEventListener('focusin', e => {
-    if (e.target.matches(TV_SEL)) _lastFocused = e.target;
+    if (e.target.matches(TV_SEL)) {
+      _lastFocused = e.target;
+      updateIndicator(e.target);
+    }
   });
-  // If focus falls to body (element removed/re-rendered), restore it
   document.addEventListener('focusout', () => {
     setTimeout(() => {
-      if (document.activeElement === document.body && _lastFocused) {
-        // Try to find same button by id or class in current DOM
-        const byId = _lastFocused.id ? document.getElementById(_lastFocused.id) : null;
-        const target = byId || document.querySelector('.detail-btn-play:not([style*="none"]), #detailPlayBtn, .rail-item.active, .rail-item');
-        if (target && isVisible && isVisible(target)) target.focus({ preventScroll: true });
+      const cur = document.activeElement;
+      if (!cur || cur === document.body) {
+        // Restore: try same element by id, then fallback
+        const byId = _lastFocused?.id ? document.getElementById(_lastFocused.id) : null;
+        const fallback = document.querySelector(
+          '#detailPlayBtn, #detailResumeBtn, .cat-side-btn, .rail-item.active, .rail-item'
+        );
+        const target = (byId && isVisible(byId)) ? byId : (fallback && isVisible(fallback) ? fallback : null);
+        if (target) target.focus({ preventScroll: true });
+        else _ind.style.display = 'none';
+      } else {
+        updateIndicator(cur);
       }
     }, 50);
   });
+
+  // Keep indicator in sync when page scrolls or resizes
+  window.addEventListener('scroll', () => updateIndicator(document.activeElement), true);
+  window.addEventListener('resize', () => updateIndicator(document.activeElement));
 
   // Spatial nearest-element finder
   function nearest(els, from, dir) {
@@ -4067,20 +4102,25 @@ function afterLogin() {
 
     // Back / Escape
     if (e.key === 'Escape' || e.key === 'GoBack') {
-      if (document.body.classList.contains('playing') || document.body.classList.contains('loading')) {
-        exitPlayer?.();
-      } else if (document.body.classList.contains('settings')) {
-        closeSettings?.(); hideSeriesModal?.();
-      } else if (document.body.classList.contains('detail')) {
-        closeDetail?.();
-      } else if (document.body.classList.contains('panel-open') || document.body.classList.contains('search-open')) {
-        closePanel?.();
-      } else if (document.body.classList.contains('cat-browse')) {
-        goHome?.();
-      } else {
-        closeSettings?.(); hideSeriesModal?.();
-      }
       e.preventDefault();
+      const body = document.body;
+      const focusRail = () => {
+        const rail = document.querySelector('.rail-item.active') || document.querySelector('.rail-item');
+        if (rail) rail.focus({ preventScroll: true });
+      };
+      if (body.classList.contains('playing') || body.classList.contains('loading')) {
+        exitPlayer?.(); setTimeout(focusRail, 200);
+      } else if (body.classList.contains('settings')) {
+        closeSettings?.(); hideSeriesModal?.(); setTimeout(focusRail, 100);
+      } else if (body.classList.contains('detail')) {
+        closeDetail?.(); setTimeout(focusRail, 100);
+      } else if (body.classList.contains('panel-open') || body.classList.contains('search-open')) {
+        closePanel?.(); setTimeout(focusRail, 100);
+      } else if (body.classList.contains('cat-browse')) {
+        goHome?.(); setTimeout(focusRail, 100);
+      } else {
+        focusRail();
+      }
     }
   });
 })();
