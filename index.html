@@ -936,7 +936,8 @@ body.loading #playerControls { display: none; }
   position: relative; height: 4px; background: rgba(255,255,255,0.3);
   border-radius: 2px; margin-bottom: 10px; cursor: pointer;
 }
-#pcProgressWrap:hover { height: 6px; margin-bottom: 8px; }
+#pcProgressWrap:hover,
+#pcProgressWrap:focus { height: 6px; margin-bottom: 8px; outline: none; box-shadow: 0 0 0 2px #e50914; border-radius: 3px; }
 #pcProgressFill {
   height: 100%; background: var(--accent); border-radius: 2px;
   pointer-events: none; transition: width .5s linear;
@@ -1734,7 +1735,7 @@ body.login #loginScreen { display: flex; }
             <span id="pcLiveChName" style="font-size:13px;color:rgba(255,255,255,0.7);margin-left:4px"></span>
           </div>
           <!-- VOD progress -->
-          <div id="pcProgressWrap">
+          <div id="pcProgressWrap" data-tv-focus tabindex="0" title="Seek">
             <div id="pcProgressFill" style="width:0%"></div>
             <input type="range" id="pcScrub" min="0" max="100" step="0.1" value="0" oninput="onScrub(this.value)">
           </div>
@@ -4129,15 +4130,30 @@ function afterLogin() {
     if (document.body.classList.contains('playing') || document.body.classList.contains('loading')) {
       const PC_SEL = '#playerControls [data-tv-focus]';
       const controlsVisible = id('playerControls')?.classList.contains('visible');
-      const onPlayerBtn = document.activeElement && document.activeElement.closest('#playerControls');
+      const cur = document.activeElement;
+      const onPlayerBtn = cur && cur.closest('#playerControls');
+      const onScrubber  = cur && cur.id === 'pcProgressWrap';
 
       if (dir || e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
 
         // Enter/Space: click focused player button, or toggle play
         if (e.key === 'Enter' || e.key === ' ') {
-          if (onPlayerBtn) { document.activeElement.click(); }
+          if (onPlayerBtn && !onScrubber) { cur.click(); }
           else { togglePlay?.(); }
+          return;
+        }
+
+        // Scrubber focused: left/right seek only
+        if (onScrubber) {
+          if (dir === 'left')  { skipVideo?.(-10); showControls?.(); }
+          if (dir === 'right') { skipVideo?.(10);  showControls?.(); }
+          // up/down move to other buttons
+          if (dir === 'up' || dir === 'down') {
+            const btns = Array.from(document.querySelectorAll(PC_SEL)).filter(isVisible);
+            const next = nearest(btns, cur, dir);
+            if (next) { next.focus({ preventScroll: true }); showControls?.(); }
+          }
           return;
         }
 
@@ -4152,13 +4168,12 @@ function afterLogin() {
         // If a player button is focused, navigate between player buttons
         if (onPlayerBtn) {
           const btns = Array.from(document.querySelectorAll(PC_SEL)).filter(isVisible);
-          const cur2 = document.activeElement;
-          const next = nearest(btns, cur2, dir);
+          const next = nearest(btns, cur, dir);
           if (next) { next.focus({ preventScroll: true }); showControls?.(); }
           return;
         }
 
-        // No button focused yet — show controls and focus play button
+        // No button focused — show controls and focus play button
         showControls?.();
         const playBtn = id('pcPlayBtn');
         if (playBtn) playBtn.focus({ preventScroll: true });
