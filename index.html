@@ -3994,6 +3994,15 @@ function afterLogin() {
   const _ind = document.getElementById('tv-focus-indicator');
   const PAD  = 5; // padding around element in px
 
+  // Reparent indicator into fullscreen element so it shows in fullscreen mode
+  function _syncIndicatorParent() {
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    const target = fsEl || document.body;
+    if (_ind.parentElement !== target) target.appendChild(_ind);
+  }
+  document.addEventListener('fullscreenchange', _syncIndicatorParent);
+  document.addEventListener('webkitfullscreenchange', _syncIndicatorParent);
+
   function updateIndicator(el) {
     if (!el || el === document.body) { _ind.style.display = 'none'; return; }
     if (!el.matches(TV_SEL)) { _ind.style.display = 'none'; return; }
