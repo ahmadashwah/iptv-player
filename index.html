@@ -4028,9 +4028,11 @@ function afterLogin() {
       if (_suppressFocusRestore) return;
       const cur = document.activeElement;
       if (!cur || cur === document.body) {
-        // Only restore to a visible rail item — safest fallback
-        const rail = document.querySelector('.rail-item.active[data-tv-focus], .rail-item[data-tv-focus]');
-        if (rail && isVisible(rail)) rail.focus({ preventScroll: true });
+        // Restore to active rail item only — never to content cards
+        const active = document.querySelector('.rail-item.active[data-tv-focus]');
+        const first  = document.querySelector('.rail-item[data-tv-focus]');
+        const rail   = (active && isVisible(active)) ? active : (first && isVisible(first)) ? first : null;
+        if (rail) rail.focus({ preventScroll: true });
         else _ind.style.display = 'none';
       } else {
         updateIndicator(cur);
@@ -4089,10 +4091,14 @@ function afterLogin() {
   }
 
   function focusFirst() {
-    // Prefer rail item, otherwise first visible focusable
-    const rail = document.querySelector('.rail-item');
-    const target = (rail && isVisible(rail)) ? rail : visibleFocusables()[0];
-    if (target) { target.focus({ preventScroll: true }); }
+    // Always prefer the active rail item; fall back to any visible rail item only
+    const active = document.querySelector('.rail-item.active[data-tv-focus]');
+    const first  = document.querySelector('.rail-item[data-tv-focus]');
+    const target = (active && isVisible(active)) ? active
+                 : (first  && isVisible(first))  ? first
+                 : null;
+    if (target) target.focus({ preventScroll: true });
+    // Never auto-focus content cards on screen transitions
   }
 
   // Auto-focus first element when screen changes
