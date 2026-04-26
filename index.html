@@ -1264,6 +1264,73 @@ body.login #loginScreen { display: flex; }
   /* Home rows */
   .home-row { padding: 0 12px !important; }
   .home-header-content { padding: 0 16px 20px !important; }
+
+  /* ── Movies & Series: 2-column poster grid on mobile ── */
+  #channelList:has(.vod-item),
+  #channelList:has(.ser-item) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 10px;
+    align-content: start;
+  }
+
+  .vod-item, .ser-item {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0;
+    border-bottom: none;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #1a1a1a;
+    gap: 0;
+  }
+  .vod-item:hover, .ser-item:hover { background: #242424; }
+
+  /* Big poster fills the card top */
+  .vod-poster, .ser-poster {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 2/3;
+    object-fit: cover !important;
+    border-radius: 0 !important;
+    flex-shrink: unset !important;
+    display: block !important;
+  }
+  .vod-poster-fb, .ser-poster-fb {
+    width: 100% !important;
+    aspect-ratio: 2/3;
+    height: auto !important;
+    border-radius: 0 !important;
+    flex-shrink: unset !important;
+    font-size: 40px !important;
+    background: #222 !important;
+  }
+
+  /* Title + meta below poster */
+  .vod-info, .ser-info {
+    padding: 8px 8px 10px;
+    width: 100%;
+  }
+  .vod-title, .ser-title {
+    font-size: 12px !important;
+    font-weight: 600;
+    white-space: normal !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.3;
+  }
+  .vod-meta, .ser-meta { font-size: 10px !important; margin-top: 4px !important; }
+  .ser-arrow { display: none; }
+
+  /* Active state */
+  .vod-item.active {
+    border-left: none !important;
+    padding-left: 0 !important;
+    outline: 3px solid var(--accent);
+  }
 }
 
 /* ── TV / D-pad focus styles ─────────────────────────────────────────────── */
