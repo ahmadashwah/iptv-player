@@ -2215,7 +2215,7 @@ function makeSearchRow(item, type) {
   const name = cleanName(item.name || item.title || '');
   const logoUrl = item.stream_icon || item.cover || '';
   const logoHtml = logoUrl
-    ? `<img data-src="${esc(toHttps(logoUrl))}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;background:#2a2a2a;flex-shrink:0" alt="" onerror="this.style.display='none'">`
+    ? `<img loading="lazy" src="${esc(toHttps(logoUrl))}" style="width:36px;height:36px;border-radius:4px;object-fit:cover;background:#2a2a2a;flex-shrink:0" alt="" onerror="this.style.display='none'">`
     : `<div style="width:36px;height:36px;border-radius:4px;background:#2a2a2a;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">${type==='live'?'📺':type==='movie'?'🎬':'🎭'}</div>`;
   const badgeClass = type === 'live' ? 'sr-type-live' : type === 'movie' ? 'sr-type-movie' : 'sr-type-series';
   const badgeText  = type === 'live' ? 'Live' : type === 'movie' ? 'Movie' : 'Series';
@@ -2308,7 +2308,7 @@ function makeLiveEl(ch) {
   el.className = 'ch-item' + (isActive ? ' active' : '');
   el.dataset.tvFocus = '';
   el.setAttribute('data-sid', ch.stream_id);
-  const logoHtml = ch.stream_icon ? `<img data-src="${esc(toHttps(ch.stream_icon))}" class="ch-logo" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
+  const logoHtml = ch.stream_icon ? `<img loading="lazy" src="${esc(toHttps(ch.stream_icon))}" class="ch-logo" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
   const fbStyle  = ch.stream_icon ? 'style="display:none"' : '';
   el.innerHTML = `
     <span class="ch-num">${esc(String(ch.num || ''))}</span>
@@ -2329,7 +2329,7 @@ function makeVodEl(m) {
   el.className = 'vod-item' + (isActive ? ' active' : '');
   el.dataset.tvFocus = '';
   el.setAttribute('data-sid', m.stream_id);
-  const posterHtml = m.stream_icon ? `<img data-src="${esc(toHttps(m.stream_icon))}" class="vod-poster" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
+  const posterHtml = m.stream_icon ? `<img loading="lazy" src="${esc(toHttps(m.stream_icon))}" class="vod-poster" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
   const fbStyle    = m.stream_icon ? 'style="display:none"' : '';
   const year   = m.year || (m.added ? new Date(m.added * 1000).getFullYear() : '');
   const rating = m.rating ? `<span class="vod-rating">★ ${parseFloat(m.rating).toFixed(1)}</span>` : '';
@@ -2351,7 +2351,7 @@ function makeSerEl(s) {
   el.className = 'ser-item';
   el.dataset.tvFocus = '';
   el.setAttribute('data-sid', s.series_id);
-  const coverHtml = s.cover ? `<img data-src="${esc(toHttps(s.cover))}" class="ser-poster" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
+  const coverHtml = s.cover ? `<img loading="lazy" src="${esc(toHttps(s.cover))}" class="ser-poster" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
   const fbStyle   = s.cover ? 'style="display:none"' : '';
   const rating    = s.rating ? `★ ${parseFloat(s.rating).toFixed(1)}` : '';
   el.innerHTML = `
@@ -2400,7 +2400,7 @@ function updateBrowseHero(ch) {
     const card = document.createElement('div');
     card.className = 'thumb-card tc' + ((i % 8) + 1);
     card.dataset.tvFocus = '';
-    const logoH = (item.stream_icon || item.cover) ? `<img data-src="${esc(toHttps(item.stream_icon || item.cover))}" alt="" onerror="this.style.display='none'">` : '';
+    const logoH = (item.stream_icon || item.cover) ? `<img loading="lazy" src="${esc(toHttps(item.stream_icon || item.cover))}" alt="" onerror="this.style.display='none'">` : '';
     card.innerHTML = `
       <div class="thumb-card-bg"></div>
       ${logoH}
@@ -2773,7 +2773,7 @@ function renderDetailMore(items, type) {
     el.className = 'detail-more-card';
     const imgUrl = toHttps(item.stream_icon || item.cover || '');
     el.innerHTML = imgUrl
-      ? `<img data-src="${esc(imgUrl)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="detail-more-card-fb" style="display:none">${type==='series'?'🎭':'🎬'}</div>`
+      ? `<img loading="lazy" src="${esc(imgUrl)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="detail-more-card-fb" style="display:none">${type==='series'?'🎭':'🎬'}</div>`
       : `<div class="detail-more-card-fb">${type==='series'?'🎭':'🎬'}</div>`;
     const label = document.createElement('div');
     label.className = 'detail-more-label';
@@ -3215,7 +3215,7 @@ function makeCatBrowseCard(item, type) {
   const rating = item.rating ? `★ ${parseFloat(item.rating).toFixed(1)}` : '';
   el.innerHTML = `
     <div class="cat-browse-card-img">
-      ${imgUrl ? `<img data-src="${esc(imgUrl)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+      ${imgUrl ? `<img loading="lazy" src="${esc(imgUrl)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
       <div class="cat-browse-card-fb" ${imgUrl ? 'style="display:none"' : ''}>${type === 'series' ? '🎭' : '🎬'}</div>
       <div class="cat-browse-card-hover">
         <div class="cat-browse-play-btn">
@@ -3618,28 +3618,7 @@ function toHttps(url) {
   return '/api/img?url=' + encodeURIComponent(url);
 }
 
-// ─── Lazy image observer ──────────────────────────────────────────────────────
-const _lazyObserver = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (!entry.isIntersecting) return;
-    const img = entry.target;
-    const src = img.dataset.src;
-    if (src) {
-      img.src = src;
-      delete img.dataset.src;
-    }
-    _lazyObserver.unobserve(img);
-  });
-}, { rootMargin: '300px' }); // start loading 300px before entering view
-
-// Watch for newly added [data-src] images anywhere in the document
-new MutationObserver(mutations => {
-  mutations.forEach(m => m.addedNodes.forEach(node => {
-    if (node.nodeType !== 1) return;
-    if (node.matches?.('img[data-src]')) _lazyObserver.observe(node);
-    node.querySelectorAll?.('img[data-src]').forEach(img => _lazyObserver.observe(img));
-  }));
-}).observe(document.documentElement, { childList: true, subtree: true });
+// Lazy image loading handled natively via loading="lazy" on all img elements.
 function httpsBase(base) { return base.replace(/^http:\/\//i, 'https://'); }
 function esc(s) {
   return String(s).replace(/[&<>"']/g, c =>
@@ -4098,10 +4077,13 @@ function afterLogin() {
                                        : root.querySelectorAll ? [...root.querySelectorAll(TV_SEL)] : [];
     els.forEach(el => { if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0'); });
   }
-  stampFocusable(document.body);
-  new MutationObserver(muts => muts.forEach(m =>
-    m.addedNodes.forEach(n => { if (n.nodeType === 1) stampFocusable(n); })
-  )).observe(document.body, { childList: true, subtree: true });
+  const _isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  if (!_isTouch) {
+    stampFocusable(document.body);
+    new MutationObserver(muts => muts.forEach(m =>
+      m.addedNodes.forEach(n => { if (n.nodeType === 1) stampFocusable(n); })
+    )).observe(document.body, { childList: true, subtree: true });
+  }
 
   // ── Floating focus indicator ────────────────────────────────────────────────
   const _ind = document.getElementById('tv-focus-indicator');
@@ -4231,10 +4213,12 @@ function afterLogin() {
     // Never auto-focus content cards on screen transitions
   }
 
-  // Auto-focus first element when screen changes
-  new MutationObserver(() => {
-    if (document.activeElement === document.body) setTimeout(focusFirst, 120);
-  }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  // Auto-focus first element when screen changes (non-touch only)
+  if (!_isTouch) {
+    new MutationObserver(() => {
+      if (document.activeElement === document.body) setTimeout(focusFirst, 120);
+    }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  }
 
   document.addEventListener('keydown', e => {
     const dirMap = { ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down' };
