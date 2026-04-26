@@ -3870,8 +3870,8 @@ function fmtTime(secs) {
     if (document.activeElement?.tagName === 'INPUT') return;
     if (!document.body.classList.contains('playing')) return;
     if (e.key === ' ' || e.key === 'k') { e.preventDefault(); togglePlay(); }
-    if (e.key === 'ArrowLeft'  || e.key === 'j') { e.preventDefault(); skipVideo(-10); }
-    if (e.key === 'ArrowRight' || e.key === 'l') { e.preventDefault(); skipVideo(10); }
+    if (e.key === 'j') { e.preventDefault(); skipVideo(-10); }
+    if (e.key === 'l') { e.preventDefault(); skipVideo(10); }
     if (e.key === 'm') toggleMute();
     if (e.key === 'f') toggleFullscreen();
     // Fullscreen escape handled by TV nav back handler below
