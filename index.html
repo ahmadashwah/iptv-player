@@ -1715,12 +1715,12 @@ body.login #loginScreen { display: flex; }
       <!-- Player controls overlay -->
       <div id="playerControls">
         <div id="pcTop">
-          <button id="pcBackBtn" onclick="exitPlayer()">
+          <button id="pcBackBtn" data-tv-focus onclick="exitPlayer()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             Back
           </button>
           <div class="pc-top-right">
-            <button class="pc-top-btn" onclick="toggleFullscreen()" title="Fullscreen">
+            <button class="pc-top-btn" data-tv-focus onclick="toggleFullscreen()" title="Fullscreen">
               <svg id="pcFsIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
             </button>
           </div>
@@ -1749,22 +1749,22 @@ body.login #loginScreen { display: flex; }
               <div id="pcTitleSub"></div>
             </div>
             <div id="pcPlaybackBtns">
-              <button class="pc-btn pc-btn-sm" id="pcSkipBack" onclick="skipVideo(-10)" title="Skip back 10s">
+              <button class="pc-btn pc-btn-sm" data-tv-focus id="pcSkipBack" onclick="skipVideo(-10)" title="Skip back 10s">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/><text x="9" y="16" font-size="6" fill="currentColor" stroke="none" font-weight="700">10</text></svg>
               </button>
-              <button class="pc-btn pc-play-main" id="pcPlayBtn" onclick="togglePlay()" title="Play/Pause">
+              <button class="pc-btn pc-play-main" data-tv-focus id="pcPlayBtn" onclick="togglePlay()" title="Play/Pause">
                 <svg id="pcPlayIcon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
               </button>
-              <button class="pc-btn pc-btn-sm" id="pcSkipFwd" onclick="skipVideo(10)" title="Skip forward 10s">
+              <button class="pc-btn pc-btn-sm" data-tv-focus id="pcSkipFwd" onclick="skipVideo(10)" title="Skip forward 10s">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-3.5"/><text x="9" y="16" font-size="6" fill="currentColor" stroke="none" font-weight="700">10</text></svg>
               </button>
             </div>
             <div id="pcRightBtns">
-              <button class="pc-btn pc-btn-sm" onclick="toggleMute()" title="Volume">
+              <button class="pc-btn pc-btn-sm" data-tv-focus onclick="toggleMute()" title="Volume">
                 <svg id="pcVolIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
               </button>
-              <button class="pc-speed-btn" id="pcSpeedBtn" onclick="cycleSpeed()">1.0×</button>
-              <button class="pc-btn pc-btn-sm" id="pcSubBtn" onclick="openSubtitleModal()" title="Subtitles">
+              <button class="pc-speed-btn" data-tv-focus id="pcSpeedBtn" onclick="cycleSpeed()">1.0×</button>
+              <button class="pc-btn pc-btn-sm" data-tv-focus id="pcSubBtn" onclick="openSubtitleModal()" title="Subtitles">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h4m4 0h2M7 11h2m4 0h5"/></svg>
               </button>
             </div>
@@ -3581,6 +3581,12 @@ function showControls() {
 function hideControls() {
   id('playerControls').classList.remove('visible');
   clearTimeout(_controlsTimer);
+  // Move focus away from player buttons so the red box disappears
+  if (document.activeElement && document.activeElement.closest('#playerControls')) {
+    document.activeElement.blur();
+    const ind = document.getElementById('tv-focus-indicator');
+    if (ind) ind.style.display = 'none';
+  }
 }
 
 function togglePlay() {
@@ -4112,16 +4118,44 @@ function afterLogin() {
 
     // ── Player controls (when content is playing) ────────────────────────────
     if (document.body.classList.contains('playing') || document.body.classList.contains('loading')) {
+      const PC_SEL = '#playerControls [data-tv-focus]';
+      const controlsVisible = id('playerControls')?.classList.contains('visible');
+      const onPlayerBtn = document.activeElement && document.activeElement.closest('#playerControls');
+
       if (dir || e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
+
+        // Enter/Space: click focused player button, or toggle play
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (onPlayerBtn) { document.activeElement.click(); }
+          else { togglePlay?.(); }
+          return;
+        }
+
+        // If controls aren't visible yet, show them and focus play button
+        if (!controlsVisible) {
+          showControls?.();
+          const playBtn = id('pcPlayBtn');
+          if (playBtn) playBtn.focus({ preventScroll: true });
+          return;
+        }
+
+        // If a player button is focused, navigate between player buttons
+        if (onPlayerBtn) {
+          const btns = Array.from(document.querySelectorAll(PC_SEL)).filter(isVisible);
+          const cur2 = document.activeElement;
+          const next = nearest(btns, cur2, dir);
+          if (next) { next.focus({ preventScroll: true }); showControls?.(); }
+          return;
+        }
+
+        // No button focused yet — show controls and focus play button
         showControls?.();
-        if (e.key === 'Enter' || e.key === ' ')  { togglePlay?.(); return; }
-        if (dir === 'left')  { skipVideo?.(-10); return; }
-        if (dir === 'right') { skipVideo?.(10);  return; }
-        if (dir === 'up')    { const v = id('player'); if (v) { v.volume = Math.min(1, (v.volume||0) + 0.1); showControls?.(); } return; }
-        if (dir === 'down')  { const v = id('player'); if (v) { v.volume = Math.max(0, (v.volume||1) - 0.1); showControls?.(); } return; }
+        const playBtn = id('pcPlayBtn');
+        if (playBtn) playBtn.focus({ preventScroll: true });
+        return;
       }
-      // All other keys (including Escape) handled below
+      // All other keys (including Escape) fall through below
     }
 
     if (dir) {
