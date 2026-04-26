@@ -3972,6 +3972,17 @@ function afterLogin() {
 (function () {
   const TV_SEL = '[data-tv-focus]';
 
+  // Ensure all data-tv-focus elements are focusable
+  function stampFocusable(root) {
+    const els = root.matches?.(TV_SEL) ? [root, ...root.querySelectorAll(TV_SEL)]
+                                       : root.querySelectorAll ? [...root.querySelectorAll(TV_SEL)] : [];
+    els.forEach(el => { if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0'); });
+  }
+  stampFocusable(document.body);
+  new MutationObserver(muts => muts.forEach(m =>
+    m.addedNodes.forEach(n => { if (n.nodeType === 1) stampFocusable(n); })
+  )).observe(document.body, { childList: true, subtree: true });
+
   // ── Floating focus indicator ────────────────────────────────────────────────
   const _ind = document.getElementById('tv-focus-indicator');
   const PAD  = 5; // padding around element in px
