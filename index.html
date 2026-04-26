@@ -3781,10 +3781,11 @@ function exitPlayer() {
   }
   if (currentDetailItem) {
     document.body.classList.add('detail');
+    if (window._tvSuppressRestore) window._tvSuppressRestore(400);
     setTimeout(() => {
       const playBtn = document.querySelector('#detailWatchE1Btn:not([style*="none"]), #detailPlayBtn:not([style*="none"]), #detailResumeBtn:not([style*="none"])');
       if (playBtn) playBtn.focus({ preventScroll: true });
-    }, 150);
+    }, 200);
   }
   const hlsToDestroy = S.hls;
   S.hls = null;
@@ -3989,8 +3990,13 @@ function afterLogin() {
 
   function updateIndicator(el) {
     if (!el || el === document.body) { _ind.style.display = 'none'; return; }
+    if (!el.matches(TV_SEL)) { _ind.style.display = 'none'; return; }
     const r = el.getBoundingClientRect();
-    if (r.width === 0 && r.height === 0) { _ind.style.display = 'none'; return; }
+    if (r.width === 0 || r.height === 0) { _ind.style.display = 'none'; return; }
+    // Hide if element is off-screen or inside a hidden container
+    if (r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth) {
+      _ind.style.display = 'none'; return;
+    }
     _ind.style.display = 'block';
     _ind.style.left    = (r.left   - PAD) + 'px';
     _ind.style.top     = (r.top    - PAD) + 'px';
@@ -4000,23 +4006,31 @@ function afterLogin() {
 
   // ── Track last focused element & restore if lost ─────────────────────────────
   let _lastFocused = null;
+  let _suppressFocusRestore = false; // set true when intentional focus transition is happening
+
+  window._tvSuppressRestore = (ms) => {
+    _suppressFocusRestore = true;
+    setTimeout(() => { _suppressFocusRestore = false; }, ms || 300);
+  };
+
   document.addEventListener('focusin', e => {
     if (e.target.matches(TV_SEL)) {
       _lastFocused = e.target;
       updateIndicator(e.target);
+    } else {
+      // Non-focusable element gained focus — hide indicator
+      updateIndicator(null);
     }
   });
   document.addEventListener('focusout', () => {
+    if (_suppressFocusRestore) return;
     setTimeout(() => {
+      if (_suppressFocusRestore) return;
       const cur = document.activeElement;
       if (!cur || cur === document.body) {
-        // Restore: try same element by id, then fallback
-        const byId = _lastFocused?.id ? document.getElementById(_lastFocused.id) : null;
-        const fallback = document.querySelector(
-          '#detailPlayBtn, #detailResumeBtn, .cat-side-btn, .rail-item.active, .rail-item'
-        );
-        const target = (byId && isVisible(byId)) ? byId : (fallback && isVisible(fallback) ? fallback : null);
-        if (target) target.focus({ preventScroll: true });
+        // Only restore to a visible rail item — safest fallback
+        const rail = document.querySelector('.rail-item.active[data-tv-focus], .rail-item[data-tv-focus]');
+        if (rail && isVisible(rail)) rail.focus({ preventScroll: true });
         else _ind.style.display = 'none';
       } else {
         updateIndicator(cur);
@@ -4061,8 +4075,13 @@ function afterLogin() {
   }
 
   function isVisible(el) {
+    // Element must be rendered (offsetParent != null, unless position:fixed)
+    if (!el.offsetParent && el.style.position !== 'fixed' && getComputedStyle(el).position !== 'fixed') return false;
     const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0 && r.bottom > 0 && r.right > 0;
+    // Must have size and be within the viewport on all 4 sides
+    return r.width > 0 && r.height > 0
+      && r.bottom > 0 && r.top < window.innerHeight
+      && r.right  > 0 && r.left < window.innerWidth;
   }
 
   function visibleFocusables() {
@@ -4217,6 +4236,7 @@ function afterLogin() {
         if (document.fullscreenElement || document.webkitFullscreenElement) {
           (document.exitFullscreen || document.webkitExitFullscreen).call(document).catch(() => {});
         }
+        if (window._tvSuppressRestore) window._tvSuppressRestore(500);
         exitPlayer?.();
         focusPlayBtn();
         return;
