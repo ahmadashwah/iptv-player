@@ -1267,14 +1267,14 @@ body.login #loginScreen { display: flex; }
 /* ── TV / D-pad focus styles ─────────────────────────────────────────────── */
 *:focus { outline: none; }
 /* Highlight states (no outline — floating indicator handles the ring) */
-.rail-item.tv-focus-ring:focus       { background: #2a2a2a; border-radius: 10px; }
-.cat-browse-card.tv-focus-ring:focus { transform: scale(1.07) translateY(-4px); }
-.thumb-card.tv-focus-ring:focus      { transform: scale(1.04); }
-.hcard-poster.tv-focus-ring:focus    { transform: scale(1.04); }
-.ch-item.tv-focus-ring:focus,
-.vod-item.tv-focus-ring:focus,
-.ser-item.tv-focus-ring:focus        { background: #1e1e1e; }
-.detail-ep-card.tv-focus-ring:focus  { background: #1e1e1e; }
+.rail-item[data-tv-focus]:focus       { background: #2a2a2a; border-radius: 10px; }
+.cat-browse-card[data-tv-focus]:focus { transform: scale(1.07) translateY(-4px); }
+.thumb-card[data-tv-focus]:focus      { transform: scale(1.04); }
+.hcard-poster[data-tv-focus]:focus    { transform: scale(1.04); }
+.ch-item[data-tv-focus]:focus,
+.vod-item[data-tv-focus]:focus,
+.ser-item[data-tv-focus]:focus        { background: #1e1e1e; }
+.detail-ep-card[data-tv-focus]:focus  { background: #1e1e1e; }
 /* Floating focus ring — always on top, never clipped */
 #tv-focus-indicator {
   position: fixed;
@@ -1333,18 +1333,18 @@ body.login #loginScreen { display: flex; }
     </div>
     <div class="login-field">
       <label for="loginEmail">Email</label>
-      <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
+      <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" data-tv-focus>
     </div>
     <div class="login-field" style="position:relative">
       <label for="loginPassword">Password</label>
-      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" style="padding-right:44px">
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" style="padding-right:44px" data-tv-focus>
       <button type="button" id="loginPassToggle" tabindex="-1" onclick="(function(){const i=document.getElementById('loginPassword');const b=document.getElementById('loginPassToggle');const show=i.type==='password';i.type=show?'text':'password';b.innerHTML=show?'<svg width=18 height=18 viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\'/><circle cx=\'12\' cy=\'12\' r=\'3\'/><line x1=\'2\' y1=\'2\' x2=\'22\' y2=\'22\'/></svg>':'<svg width=18 height=18 viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\'/><circle cx=\'12\' cy=\'12\' r=\'3\'/></svg>';})()" style="position:absolute;right:10px;bottom:8px;background:none;border:none;cursor:pointer;color:#888;padding:4px;display:flex;align-items:center;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
     </div>
     <div class="login-error" id="loginError"></div>
-    <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In</button>
-    <div class="login-settings-link" onclick="loginManual()" tabindex="0" role="button">Enter credentials manually instead</div>
+    <button class="login-btn" id="loginBtn" data-tv-focus onclick="doLogin()">Sign In</button>
+    <div class="login-settings-link" data-tv-focus onclick="loginManual()" tabindex="0" role="button">Enter credentials manually instead</div>
   </div>
 </div>
 
@@ -1355,7 +1355,7 @@ body.login #loginScreen { display: flex; }
   <div class="rail-logo">AshwahTV</div>
 
   <!-- Search -->
-  <div class="rail-item" id="rail-search" onclick="toggleSearch()">
+  <div class="rail-item" id="rail-search" data-tv-focus onclick="toggleSearch()">
     <div class="rail-icon">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
@@ -1365,7 +1365,7 @@ body.login #loginScreen { display: flex; }
   </div>
 
   <!-- Home -->
-  <div class="rail-item" id="rail-home" onclick="openHome()">
+  <div class="rail-item" id="rail-home" data-tv-focus onclick="openHome()">
     <div class="rail-icon">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/>
@@ -1376,7 +1376,7 @@ body.login #loginScreen { display: flex; }
   </div>
 
   <!-- Live TV -->
-  <div class="rail-item" id="rail-live" onclick="openPanel('live')">
+  <div class="rail-item" id="rail-live" data-tv-focus onclick="openPanel('live')">
     <div class="rail-icon">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="2" y="7" width="20" height="14" rx="2"/>
@@ -1387,7 +1387,7 @@ body.login #loginScreen { display: flex; }
   </div>
 
   <!-- Movies -->
-  <div class="rail-item" id="rail-vod" onclick="openPanel('vod')">
+  <div class="rail-item" id="rail-vod" data-tv-focus onclick="openPanel('vod')">
     <div class="rail-icon">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="2" y="2" width="20" height="20" rx="2"/>
@@ -1400,7 +1400,7 @@ body.login #loginScreen { display: flex; }
   </div>
 
   <!-- Series -->
-  <div class="rail-item" id="rail-series" onclick="openPanel('series')">
+  <div class="rail-item" id="rail-series" data-tv-focus onclick="openPanel('series')">
     <div class="rail-icon">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="2" y="2" width="9" height="9" rx="1.5"/><rect x="13" y="2" width="9" height="9" rx="1.5"/>
@@ -1413,7 +1413,7 @@ body.login #loginScreen { display: flex; }
   <div class="rail-spacer"></div>
 
   <!-- Settings -->
-  <div class="rail-item" id="rail-settings" onclick="openSettings()">
+  <div class="rail-item" id="rail-settings" data-tv-focus onclick="openSettings()">
     <div class="rail-icon">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"/>
@@ -1462,10 +1462,10 @@ body.login #loginScreen { display: flex; }
       </div>
     </div>
     <div class="search-filters">
-      <button class="sf-btn active" onclick="setFilter('all',this)">All</button>
-      <button class="sf-btn" onclick="setFilter('live',this)">Live</button>
-      <button class="sf-btn" onclick="setFilter('movie',this)">Movies</button>
-      <button class="sf-btn" onclick="setFilter('series',this)">Series</button>
+      <button class="sf-btn active" data-tv-focus onclick="setFilter('all',this)">All</button>
+      <button class="sf-btn" data-tv-focus onclick="setFilter('live',this)">Live</button>
+      <button class="sf-btn" data-tv-focus onclick="setFilter('movie',this)">Movies</button>
+      <button class="sf-btn" data-tv-focus onclick="setFilter('series',this)">Series</button>
     </div>
     <div id="searchResults">
       <div style="padding:32px 16px;text-align:center;color:#555;font-size:13px">
@@ -1553,7 +1553,7 @@ body.login #loginScreen { display: flex; }
             <div class="setting-toggle-sub">Fetch English titles, descriptions and artwork from TMDB</div>
           </div>
           <label class="toggle-switch">
-            <input type="checkbox" id="cfgTmdbEnabled" onchange="toggleTmdbSetting(this.checked)">
+            <input type="checkbox" id="cfgTmdbEnabled" data-tv-focus onchange="toggleTmdbSetting(this.checked)">
             <span class="toggle-slider"></span>
           </label>
         </div>
@@ -1578,17 +1578,17 @@ body.login #loginScreen { display: flex; }
             <div class="setting-toggle-sub">Show programme guide below the player (Live TV only)</div>
           </div>
           <label class="toggle-switch">
-            <input type="checkbox" id="cfgEpgEnabled" onchange="toggleEpgSetting(this.checked)">
+            <input type="checkbox" id="cfgEpgEnabled" data-tv-focus onchange="toggleEpgSetting(this.checked)">
             <span class="toggle-slider"></span>
           </label>
         </div>
       </div>
       <div class="modal-actions" style="padding:0;margin-top:8px">
-        <button class="btn btn-reload" onclick="reloadContent()" title="Refresh content">
+        <button class="btn btn-reload" data-tv-focus onclick="reloadContent()" title="Refresh content">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.44"/></svg>
         </button>
         <div class="divider"></div>
-        <button class="btn btn-red" onclick="saveSettings()">Save &amp; Apply</button>
+        <button class="btn btn-red" data-tv-focus onclick="saveSettings()">Save &amp; Apply</button>
       </div>
 
       <!-- Account -->
@@ -1597,7 +1597,7 @@ body.login #loginScreen { display: flex; }
           <span>Account</span>
           <span id="loggedInAs" style="font-size:12px;color:#555;font-weight:400;"></span>
         </label>
-        <button class="btn" style="background:#2a2a2a;color:#e5e5e5;margin-top:8px;" onclick="doLogout()">Sign Out</button>
+        <button class="btn" data-tv-focus style="background:#2a2a2a;color:#e5e5e5;margin-top:8px;" onclick="doLogout()">Sign Out</button>
       </div>
     </div>
   </div>
@@ -1629,19 +1629,19 @@ body.login #loginScreen { display: flex; }
       <div class="detail-meta-row" id="detailMeta"></div>
       <div class="detail-plot"     id="detailPlot"></div>
       <div class="detail-actions">
-        <button class="detail-btn-play" id="detailPlayBtn" onclick="detailPlay(false)">
+        <button class="detail-btn-play" id="detailPlayBtn" data-tv-focus onclick="detailPlay(false)">
           <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
           Play
         </button>
-        <button class="detail-btn-resume" id="detailResumeBtn" onclick="detailPlay(true)" style="display:none">
+        <button class="detail-btn-resume" id="detailResumeBtn" data-tv-focus onclick="detailPlay(true)" style="display:none">
           <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
           <span id="detailResumeTxt">Resume</span>
         </button>
-        <button class="detail-btn-play" id="detailWatchE1Btn" onclick="watchEpisodeOne()" style="display:none">
+        <button class="detail-btn-play" id="detailWatchE1Btn" data-tv-focus onclick="watchEpisodeOne()" style="display:none">
           <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
           Watch Episode 1
         </button>
-        <button class="detail-btn-list" id="detailSaveBtn" onclick="toggleSave()">
+        <button class="detail-btn-list" id="detailSaveBtn" data-tv-focus onclick="toggleSave()">
           <svg id="detailSaveIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <span id="detailSaveTxt">Save</span>
         </button>
@@ -2064,6 +2064,7 @@ function renderCats() {
 function makeCatSideBtn(label, catId) {
   const el = document.createElement('button');
   el.className = 'cat-side-btn' + (S.activeCat === String(catId) ? ' active' : '');
+  el.dataset.tvFocus = '';
   el.setAttribute('data-id', catId);
   el.textContent = label;
   el.onclick = () => selectCat(catId);
@@ -2192,6 +2193,7 @@ function makeLiveEl(ch) {
   const isActive = S.currentCh?.stream_id === ch.stream_id && S.mode === 'live';
   const el = document.createElement('div');
   el.className = 'ch-item' + (isActive ? ' active' : '');
+  el.dataset.tvFocus = '';
   el.setAttribute('data-sid', ch.stream_id);
   const logoHtml = ch.stream_icon ? `<img data-src="${esc(toHttps(ch.stream_icon))}" class="ch-logo" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
   const fbStyle  = ch.stream_icon ? 'style="display:none"' : '';
@@ -2212,6 +2214,7 @@ function makeVodEl(m) {
   const isActive = S.currentCh?.stream_id === m.stream_id && S.mode === 'vod';
   const el = document.createElement('div');
   el.className = 'vod-item' + (isActive ? ' active' : '');
+  el.dataset.tvFocus = '';
   el.setAttribute('data-sid', m.stream_id);
   const posterHtml = m.stream_icon ? `<img data-src="${esc(toHttps(m.stream_icon))}" class="vod-poster" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
   const fbStyle    = m.stream_icon ? 'style="display:none"' : '';
@@ -2233,6 +2236,7 @@ function makeVodEl(m) {
 function makeSerEl(s) {
   const el = document.createElement('div');
   el.className = 'ser-item';
+  el.dataset.tvFocus = '';
   el.setAttribute('data-sid', s.series_id);
   const coverHtml = s.cover ? `<img data-src="${esc(toHttps(s.cover))}" class="ser-poster" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
   const fbStyle   = s.cover ? 'style="display:none"' : '';
@@ -2282,6 +2286,7 @@ function updateBrowseHero(ch) {
   nearby.slice(0, 10).forEach((item, i) => {
     const card = document.createElement('div');
     card.className = 'thumb-card tc' + ((i % 8) + 1);
+    card.dataset.tvFocus = '';
     const logoH = (item.stream_icon || item.cover) ? `<img data-src="${esc(toHttps(item.stream_icon || item.cover))}" alt="" onerror="this.style.display='none'">` : '';
     card.innerHTML = `
       <div class="thumb-card-bg"></div>
@@ -2676,6 +2681,7 @@ function renderDetailSeasons(episodes) {
   seasons.forEach((s, i) => {
     const btn = document.createElement('button');
     btn.className = 'detail-season-btn' + (i===0?' active':'');
+    btn.dataset.tvFocus = '';
     btn.textContent = `Season ${s}`;
     btn.onclick = () => {
       document.querySelectorAll('.detail-season-btn').forEach(b=>b.classList.remove('active'));
@@ -2694,6 +2700,7 @@ function renderDetailEpisodes(eps, seasonNum) {
   eps.forEach(ep => {
     const el = document.createElement('div');
     el.className = 'detail-ep-item detail-ep-card';
+    el.dataset.tvFocus = '';
     el.dataset.season = seasonNum || '';
     el.dataset.ep     = ep.episode_num || '';
     const imgUrl = toHttps(ep.info?.movie_image || '');
@@ -2780,6 +2787,7 @@ function refreshSavedRow() {
   list.forEach((entry, i) => {
     const card = document.createElement('div');
     card.className = 'hcard-poster tc' + ((i % 8) + 1);
+    card.dataset.tvFocus = '';
     const imgUrl = toHttps(entry.icon || '');
     const year   = entry.year || '';
     const rat    = entry.rating ? `★ ${parseFloat(entry.rating).toFixed(1)}` : '';
@@ -2871,6 +2879,7 @@ function renderTMDBRow(rowId, items, mediaType) {
   items.forEach((item, i) => {
     const card   = document.createElement('div');
     card.className = 'hcard-poster tc' + ((i % 8) + 1);
+    card.dataset.tvFocus = '';
     const poster = item.poster_path ? TMDB_IMG + item.poster_path : '';
     const title  = item.title || item.name || '';
     const year   = (item.release_date || item.first_air_date || '').slice(0, 4);
@@ -3087,6 +3096,7 @@ function renderCatBrowse(mode) {
 function makeCatBrowseCard(item, type) {
   const el = document.createElement('div');
   el.className = 'cat-browse-card';
+  el.dataset.tvFocus = '';
   const imgUrl = toHttps(item.stream_icon || item.cover || '');
   const year   = item.year || '';
   const rating = item.rating ? `★ ${parseFloat(item.rating).toFixed(1)}` : '';
@@ -3960,31 +3970,7 @@ function afterLogin() {
 
 // ─── TV / D-pad spatial navigation ───────────────────────────────────────────
 (function () {
-  const TV_SEL = [
-    '.rail-item', '.thumb-card', '.hcard-poster',
-    '.ch-item', '.vod-item', '.ser-item',
-    '.cat-browse-card', '.detail-ep-card',
-    '.detail-btn-play', '.detail-btn-resume', '.detail-btn-list',
-    '#detailWatchE1Btn', '#detailPlayBtn', '#detailResumeBtn', '#detailSaveBtn',
-    '.detail-season-btn',
-    '.cat-side-btn', '.sf-btn',
-    'input[type=text]', 'input[type=email]', 'input[type=password]', 'input[type=number]', 'select', 'textarea',
-    '#loginBtn', '.login-settings-link', '.btn',
-  ].join(',');
-
-  // Mark every matching element as focusable
-  function stamp(root) {
-    (root.matches?.(TV_SEL) ? [root] : [])
-      .concat(Array.from(root.querySelectorAll ? root.querySelectorAll(TV_SEL) : []))
-      .forEach(el => {
-        if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
-        el.classList.add('tv-focus-ring');
-      });
-  }
-  stamp(document.body);
-  new MutationObserver(muts => muts.forEach(m =>
-    m.addedNodes.forEach(n => { if (n.nodeType === 1) stamp(n); })
-  )).observe(document.body, { childList: true, subtree: true });
+  const TV_SEL = '[data-tv-focus]';
 
   // ── Floating focus indicator ────────────────────────────────────────────────
   const _ind = document.getElementById('tv-focus-indicator');
