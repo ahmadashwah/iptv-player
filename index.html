@@ -4110,6 +4110,20 @@ function afterLogin() {
     const dirMap = { ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down' };
     const dir = dirMap[e.key];
 
+    // ── Player controls (when content is playing) ────────────────────────────
+    if (document.body.classList.contains('playing') || document.body.classList.contains('loading')) {
+      if (dir || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        showControls?.();
+        if (e.key === 'Enter' || e.key === ' ')  { togglePlay?.(); return; }
+        if (dir === 'left')  { skipVideo?.(-10); return; }
+        if (dir === 'right') { skipVideo?.(10);  return; }
+        if (dir === 'up')    { const v = id('player'); if (v) { v.volume = Math.min(1, (v.volume||0) + 0.1); showControls?.(); } return; }
+        if (dir === 'down')  { const v = id('player'); if (v) { v.volume = Math.max(0, (v.volume||1) - 0.1); showControls?.(); } return; }
+      }
+      // All other keys (including Escape) handled below
+    }
+
     if (dir) {
       e.preventDefault();
       const cur = document.activeElement;
