@@ -894,6 +894,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); }
 }
 #playerControls.visible { opacity: 1; pointer-events: all; }
 body.loading #playerControls { display: none; }
+body:not(.playing):not(.loading) #playerControls { display: none; }
 
 /* Top bar */
 #pcTop {
@@ -1721,7 +1722,7 @@ body.login #loginScreen { display: flex; }
             Back
           </button>
           <div class="pc-top-right">
-            <button class="pc-top-btn" data-tv-focus onclick="toggleFullscreen()" title="Fullscreen">
+            <button class="pc-top-btn" onclick="toggleFullscreen()" title="Fullscreen">
               <svg id="pcFsIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
             </button>
           </div>
@@ -4167,7 +4168,11 @@ function afterLogin() {
 
         // If a player button is focused, navigate between player buttons
         if (onPlayerBtn) {
-          const btns = Array.from(document.querySelectorAll(PC_SEL)).filter(isVisible);
+          const allBtns = Array.from(document.querySelectorAll(PC_SEL)).filter(isVisible);
+          // Left/right: exclude the scrubber so you can't accidentally land on it and trigger seek
+          const btns = (dir === 'left' || dir === 'right')
+            ? allBtns.filter(b => b.id !== 'pcProgressWrap')
+            : allBtns;
           const next = nearest(btns, cur, dir);
           if (next) { next.focus({ preventScroll: true }); showControls?.(); }
           return;
