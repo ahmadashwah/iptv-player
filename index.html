@@ -4221,7 +4221,7 @@ function afterLogin() {
       // Detail screen: ArrowDown from action buttons → episode list
       if (dir === 'down' && cur && cur.matches('.detail-btn-play, .detail-btn-resume, .detail-btn-list, #detailWatchE1Btn, #detailSaveBtn')) {
         const firstEp = document.querySelector('.detail-ep-card');
-        if (firstEp && isVisible(firstEp)) { firstEp.focus({ preventScroll: true }); firstEp.scrollIntoView({ block: 'nearest' }); return; }
+        if (firstEp) { firstEp.scrollIntoView({ block: 'nearest' }); firstEp.focus({ preventScroll: true }); return; }
       }
 
       // Detail screen: ArrowUp from episode list → action buttons
@@ -4289,6 +4289,34 @@ function afterLogin() {
       if (target) {
         target.focus({ preventScroll: true });
         target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        return;
+      }
+
+      // No visible focusable in that direction — look for off-screen elements and scroll to them
+      if (from && (dir === 'down' || dir === 'up')) {
+        // Find all data-tv-focus elements including off-screen ones
+        const allEls = Array.from(document.querySelectorAll(TV_SEL)).filter(el => {
+          if (!el.offsetParent && getComputedStyle(el).position !== 'fixed') return false;
+          const r = el.getBoundingClientRect();
+          return r.width > 0 && r.height > 0;
+        });
+        const offscreen = nearest(allEls, from, dir);
+        if (offscreen) {
+          offscreen.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+          offscreen.focus({ preventScroll: true });
+          return;
+        }
+      }
+
+      // Still nothing — scroll the active scrollable container
+      if (dir === 'down' || dir === 'up') {
+        const scrollable = cur && (
+          cur.closest('#detailScreen') ||
+          cur.closest('#channelList') ||
+          cur.closest('#searchResults') ||
+          document.scrollingElement
+        );
+        if (scrollable) scrollable.scrollBy({ top: dir === 'down' ? 300 : -300, behavior: 'smooth' });
       }
       return;
     }
