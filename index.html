@@ -3996,14 +3996,16 @@ function afterLogin() {
   const _ind = document.getElementById('tv-focus-indicator');
   const PAD  = 5; // padding around element in px
 
-  // Reparent indicator into fullscreen element so it shows in fullscreen mode
-  function _syncIndicatorParent() {
+  // Reparent indicator + subtitle modal into fullscreen element so they show in fullscreen mode
+  function _syncFullscreenChildren() {
     const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
     const target = fsEl || document.body;
     if (_ind.parentElement !== target) target.appendChild(_ind);
+    const subModal = document.getElementById('subtitleModal');
+    if (subModal && subModal.parentElement !== target) target.appendChild(subModal);
   }
-  document.addEventListener('fullscreenchange', _syncIndicatorParent);
-  document.addEventListener('webkitfullscreenchange', _syncIndicatorParent);
+  document.addEventListener('fullscreenchange', _syncFullscreenChildren);
+  document.addEventListener('webkitfullscreenchange', _syncFullscreenChildren);
 
   function updateIndicator(el) {
     if (!el || el === document.body) { _ind.style.display = 'none'; return; }
