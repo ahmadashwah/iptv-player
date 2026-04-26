@@ -2233,21 +2233,67 @@ function makeSearchRow(item, type) {
 }
 
 // ─── Render items ─────────────────────────────────────────────────────────────
+const RENDER_PAGE = 60; // items per batch
+let _renderItems  = [];  // full item array for current list
+let _renderOffset = 0;   // how many have been rendered so far
+let _renderMode   = '';  // mode at render time
+let _renderObs    = null; // IntersectionObserver for sentinel
+
+function _makeEl(item) {
+  if (_renderMode === 'live')   return makeLiveEl(item);
+  if (_renderMode === 'vod')    return makeVodEl(item);
+  if (_renderMode === 'series') return makeSerEl(item);
+}
+
+function _appendBatch(list) {
+  if (_renderOffset >= _renderItems.length) return;
+  const batch = _renderItems.slice(_renderOffset, _renderOffset + RENDER_PAGE);
+  const frag  = document.createDocumentFragment();
+  batch.forEach(item => frag.appendChild(_makeEl(item)));
+  _renderOffset += batch.length;
+
+  // Remove old sentinel if present
+  const old = list.querySelector('.list-sentinel');
+  if (old) old.remove();
+
+  list.appendChild(frag);
+
+  // Add new sentinel if more items remain
+  if (_renderOffset < _renderItems.length) {
+    const sentinel = document.createElement('div');
+    sentinel.className = 'list-sentinel';
+    sentinel.style.cssText = 'height:1px;width:100%;';
+    list.appendChild(sentinel);
+    if (_renderObs) _renderObs.observe(sentinel);
+  }
+}
+
 function renderItems(items) {
   id('chCount').textContent = items.length ? `${items.length.toLocaleString()} items` : '';
   if (!items.length) {
     setList('<div class="ch-empty"><div class="icon">🔍</div><div>No results</div></div>');
     return;
   }
-  const frag = document.createDocumentFragment();
-  if (S.mode === 'live')   items.forEach(c => frag.appendChild(makeLiveEl(c)));
-  if (S.mode === 'vod')    items.forEach(c => frag.appendChild(makeVodEl(c)));
-  if (S.mode === 'series') items.forEach(c => frag.appendChild(makeSerEl(c)));
+
+  // Set up progressive render state
+  _renderItems  = items;
+  _renderOffset = 0;
+  _renderMode   = S.mode;
+
   const list = id('channelList');
   list.innerHTML = '';
-  list.appendChild(frag);
+
+  // Disconnect previous observer
+  if (_renderObs) { _renderObs.disconnect(); _renderObs = null; }
+
+  // Create IntersectionObserver to load next batch when sentinel scrolls into view
+  _renderObs = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) _appendBatch(list);
+  }, { root: list, rootMargin: '200px' });
+
+  _appendBatch(list);
+
   // For TV: only auto-focus list items in non-live modes
-  // Live TV focuses categories instead (handled in openPanel)
   if (S.mode !== 'live') {
     setTimeout(() => {
       const first = list.querySelector('.ch-item, .vod-item, .ser-item');
