@@ -1940,7 +1940,9 @@ async function refreshTunnelUrl() {
     if (url && url.startsWith('https://')) {
       // Verify tunnel is actually alive before trusting the URL
       try {
-        await fetch(url + '/ping', { signal: AbortSignal.timeout(4000) });
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 6000);
+        await fetch(url + '/proxy?url=', { signal: ctrl.signal }).finally(() => clearTimeout(t)); // 400 = proxy alive
       } catch {
         showTunnelBanner(true);
         return; // tunnel is down — don't update, avoid spinning
@@ -1956,15 +1958,27 @@ function showTunnelBanner(down) {
   if (!banner) {
     banner = document.createElement('div');
     banner.id = 'tunnelBanner';
-    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#b91c1c;color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-weight:600;display:none';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#b91c1c;color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-weight:600;display:none;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap';
     document.body.appendChild(banner);
   }
   if (down) {
-    banner.textContent = '⚠️ Pi tunnel is offline — restart your Pi to restore content';
-    banner.style.display = 'block';
+    banner.style.display = 'flex';
+    banner.innerHTML = `
+      <span>⚠️ Pi tunnel is offline — restart your Pi to restore content</span>
+      <button onclick="retryTunnel()" style="background:rgba(255,255,255,0.25);border:none;color:#fff;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:700">Retry</button>`;
   } else {
     banner.style.display = 'none';
   }
+}
+
+async function retryTunnel() {
+  const btn = document.querySelector('#tunnelBanner button');
+  if (btn) { btn.textContent = 'Checking…'; btn.disabled = true; }
+  await refreshTunnelUrl();
+  // If still down, banner stays; if up, banner hides and reload content
+  if (document.getElementById('tunnelBanner')?.style.display === 'none') {
+    loadCurrent();
+  } else if (btn) { btn.textContent = 'Retry'; btn.disabled = false; }
 }
 
 // ─── Proxy ────────────────────────────────────────────────────────────────────
