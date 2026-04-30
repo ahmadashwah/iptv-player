@@ -1128,17 +1128,17 @@ body.login #loginScreen { display: flex; }
 .login-card {
   width: 100%; max-width: 400px; padding: 48px 40px;
   background: #1f1f1f; border-radius: 8px;
-  display: flex; flex-direction: column; gap: 20px;
+  display: flex; flex-direction: column; gap: 28px;
 }
 .login-logo {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 36px; color: #e50914; letter-spacing: 3px;
-  margin-bottom: 8px; text-align: center;
+  text-align: center;
 }
-.login-title { font-size: 28px; font-weight: 700; color: #fff; }
+.login-title { font-size: 32px; font-weight: 700; color: #fff; margin-bottom: 4px; }
 .login-sub { font-size: 14px; color: #777; }
-.login-field { display: flex; flex-direction: column; gap: 6px; }
-.login-field label { font-size: 13px; color: #aaa; }
+.login-field { display: flex; flex-direction: column; gap: 8px; }
+.login-field label { font-size: 13px; color: #aaa; font-weight: 500; }
 .login-field input {
   background: #2a2a2a; border: 1px solid #333; border-radius: 4px;
   color: #fff; font-size: 15px; padding: 12px 14px;
@@ -1424,7 +1424,6 @@ body.login #loginScreen { display: flex; }
     <div id="loginPanelManual" style="display:none">
       <div>
         <div class="login-title">Manual Setup</div>
-        <div class="login-sub">Enter your IPTV server details directly</div>
       </div>
       <div class="login-field">
         <label for="manualServer">Server URL</label>
