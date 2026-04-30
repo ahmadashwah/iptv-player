@@ -4568,7 +4568,10 @@ function afterLogin() {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 refreshTunnelUrl();
-setTimeout(() => document.querySelector('.rail-item')?.focus(), 300);
+setTimeout(() => {
+  if (!document.body.classList.contains('login'))
+    document.querySelector('.rail-item')?.focus();
+}, 300);
 syncLangButtons();
 if (S.cfg.epgEnabled) document.body.classList.add('epg-enabled');
 refreshContinueRow();
