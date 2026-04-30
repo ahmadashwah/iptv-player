@@ -1396,24 +1396,52 @@ body.login #loginScreen { display: flex; }
 <div id="loginScreen">
   <div class="login-card">
     <div class="login-logo">AshwahTV</div>
-    <div>
-      <div class="login-title">Sign in</div>
-      <div class="login-sub">Enter your credentials to continue</div>
+
+    <!-- Email/password panel -->
+    <div id="loginPanelEmail">
+      <div>
+        <div class="login-title">Sign in</div>
+        <div class="login-sub">Enter your credentials to continue</div>
+      </div>
+      <div class="login-field">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" data-tv-focus>
+      </div>
+      <div class="login-field" style="position:relative">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" style="padding-right:44px" data-tv-focus>
+        <button type="button" id="loginPassToggle" tabindex="-1" onclick="(function(){const i=document.getElementById('loginPassword');const b=document.getElementById('loginPassToggle');const show=i.type==='password';i.type=show?'text':'password';b.innerHTML=show?'<svg width=18 height=18 viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\'/><circle cx=\'12\' cy=\'12\' r=\'3\'/><line x1=\'2\' y1=\'2\' x2=\'22\' y2=\'22\'/></svg>':'<svg width=18 height=18 viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\'/><circle cx=\'12\' cy=\'12\' r=\'3\'/></svg>';})()" style="position:absolute;right:10px;bottom:8px;background:none;border:none;cursor:pointer;color:#888;padding:4px;display:flex;align-items:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button class="login-btn" id="loginBtn" data-tv-focus onclick="doLogin()">Sign In</button>
+      <div class="login-settings-link" data-tv-focus onclick="loginManual()" tabindex="0" role="button">Enter credentials manually instead</div>
     </div>
-    <div class="login-field">
-      <label for="loginEmail">Email</label>
-      <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" data-tv-focus>
+
+    <!-- Manual credentials panel -->
+    <div id="loginPanelManual" style="display:none">
+      <div>
+        <div class="login-title">Manual Setup</div>
+        <div class="login-sub">Enter your IPTV server details directly</div>
+      </div>
+      <div class="login-field">
+        <label for="manualServer">Server URL</label>
+        <input type="url" id="manualServer" placeholder="https://iptv-server.com:8080" autocomplete="off" data-tv-focus>
+      </div>
+      <div class="login-field">
+        <label for="manualUser">Username</label>
+        <input type="text" id="manualUser" placeholder="your_username" autocomplete="username" data-tv-focus>
+      </div>
+      <div class="login-field">
+        <label for="manualPass">Password</label>
+        <input type="password" id="manualPass" placeholder="your_password" autocomplete="current-password" data-tv-focus>
+      </div>
+      <div class="login-error" id="loginErrorManual"></div>
+      <button class="login-btn" data-tv-focus onclick="doLoginManual()">Connect</button>
+      <div class="login-settings-link" data-tv-focus onclick="loginShowEmail()" tabindex="0" role="button">← Back to sign in</div>
     </div>
-    <div class="login-field" style="position:relative">
-      <label for="loginPassword">Password</label>
-      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" style="padding-right:44px" data-tv-focus>
-      <button type="button" id="loginPassToggle" tabindex="-1" onclick="(function(){const i=document.getElementById('loginPassword');const b=document.getElementById('loginPassToggle');const show=i.type==='password';i.type=show?'text':'password';b.innerHTML=show?'<svg width=18 height=18 viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\'/><circle cx=\'12\' cy=\'12\' r=\'3\'/><line x1=\'2\' y1=\'2\' x2=\'22\' y2=\'22\'/></svg>':'<svg width=18 height=18 viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\'/><circle cx=\'12\' cy=\'12\' r=\'3\'/></svg>';})()" style="position:absolute;right:10px;bottom:8px;background:none;border:none;cursor:pointer;color:#888;padding:4px;display:flex;align-items:center;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-      </button>
-    </div>
-    <div class="login-error" id="loginError"></div>
-    <button class="login-btn" id="loginBtn" data-tv-focus onclick="doLogin()">Sign In</button>
-    <div class="login-settings-link" data-tv-focus onclick="loginManual()" tabindex="0" role="button">Enter credentials manually instead</div>
+
   </div>
 </div>
 
@@ -1592,19 +1620,6 @@ body.login #loginScreen { display: flex; }
       </div>
     </div>
     <div class="settings-body">
-      <div class="field">
-        <label>Server URL</label>
-        <input type="text" id="cfgServer" placeholder="http://iptv-server.com:8080" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Username</label>
-        <input type="text" id="cfgUser" placeholder="your_username" autocomplete="username">
-      </div>
-      <div class="field">
-        <label>Password</label>
-        <input type="password" id="cfgPass" placeholder="your_password" autocomplete="current-password">
-        <div class="field-note">🔒 Saved for this browser session only.</div>
-      </div>
       <div class="field">
         <label>Raspberry Pi Tunnel <span style="color:var(--muted);font-weight:400;text-transform:none">(auto-managed)</span></label>
         <div id="piStatus" class="pi-status">
@@ -3530,9 +3545,6 @@ function openSettings() {
                      : document.body.classList.contains('detail')     ? 'detail'
                      : null;
 
-  id('cfgServer').value = S.cfg.server   || '';
-  id('cfgUser').value   = S.cfg.username || '';
-  id('cfgPass').value   = S.password     || '';
   id('cfgEpgEnabled').checked  = !!S.cfg.epgEnabled;
   id('cfgTmdbEnabled').checked = !!S.cfg.tmdbEnabled;
   id('cfgTmdbKey').value = S.cfg.tmdbKey || '';
@@ -3594,23 +3606,11 @@ function closeSettings() {
 function onModalBg() { /* no-op: settings is now an inline page */ }
 
 function saveSettings() {
-  const server   = id('cfgServer').value.trim();
-  const username = id('cfgUser').value.trim();
-  const password = id('cfgPass').value;
-  if (!server || !username || !password) { toast('Fill in all three fields', 'err'); return; }
-  if (server !== S.cfg.server || username !== S.cfg.username) {
-    S.live.loaded = S.vod.loaded = S.series.loaded = false;
-  }
-  S.cfg.server   = server;
-  S.cfg.username = username;
-  S.password     = password;
   S.cfg.tmdbKey     = id('cfgTmdbKey').value.trim();
   S.cfg.tmdbEnabled = !!id('cfgTmdbEnabled').checked;
-  localStorage.setItem('iptv_pass', password);
   saveCfg();
   closeSettings();
   loadTMDBRows();
-  openPanel(S.mode || 'live');
 }
 
 function toggleEpgSetting(enabled) {
@@ -4083,9 +4083,37 @@ document.addEventListener('keydown', e => {
 });
 
 function loginManual() {
+  id('loginPanelEmail').style.display  = 'none';
+  id('loginPanelManual').style.display = '';
+  // Pre-fill with saved values if any
+  id('manualServer').value = S.cfg.server   || '';
+  id('manualUser').value   = S.cfg.username || '';
+  id('manualPass').value   = S.password     || '';
+  setTimeout(() => id('manualServer').focus(), 40);
+}
+
+function loginShowEmail() {
+  id('loginPanelManual').style.display = 'none';
+  id('loginPanelEmail').style.display  = '';
+  setTimeout(() => id('loginEmail').focus(), 40);
+}
+
+async function doLoginManual() {
+  const server   = id('manualServer').value.trim().replace(/\/+$/, '');
+  const username = id('manualUser').value.trim();
+  const password = id('manualPass').value;
+  const errEl    = id('loginErrorManual');
+  errEl.textContent = '';
+  if (!server || !username || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
+
+  S.cfg.server   = server;
+  S.cfg.username = username;
+  S.password     = password;
+  sessionStorage.setItem('iptv_pass', password);
+  saveCfg();
+
   hideLogin();
-  // Populate with any previously saved values so they don't start from scratch
-  openSettings();
+  afterLogin();
 }
 
 function doLogout() {
