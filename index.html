@@ -1149,6 +1149,8 @@ body.login #loginScreen { display: flex; }
   background: #e50914; color: #fff; border: none;
   border-radius: 4px; font-size: 16px; font-weight: 700;
   padding: 14px; cursor: pointer; transition: background .15s; margin-top: 4px;
+  display: block; width: fit-content; min-width: 160px;
+  margin-left: auto; margin-right: auto;
 }
 .login-btn:hover { background: #f40612; }
 .login-btn:disabled { background: #555; cursor: default; }
@@ -1401,7 +1403,6 @@ body.login #loginScreen { display: flex; }
     <div id="loginPanelEmail">
       <div>
         <div class="login-title">Sign in</div>
-        <div class="login-sub">Enter your credentials to continue</div>
       </div>
       <div class="login-field">
         <label for="loginEmail">Email</label>
