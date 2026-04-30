@@ -1625,14 +1625,14 @@ body.login #loginScreen { display: flex; }
           </label>
         </div>
       </div>
-      <div class="field" id="tmdbKeyField" style="opacity:0.35;pointer-events:none">
+      <div id="tmdbKeyField" class="field" style="display:none">
         <label>TMDB API Key <span style="color:var(--muted);font-weight:400;text-transform:none">(for Discover rows)</span></label>
         <input type="text" id="cfgTmdbKey" placeholder="Paste your TMDB API key…" autocomplete="off">
       </div>
-      <div class="field">
+      <div id="tmdbLangField" class="field" style="display:none">
         <label>Language</label>
         <div class="lang-picker">
-          <button id="langEnBtn" class="lang-btn" onclick="setLanguage('en')" style="opacity:0.35;pointer-events:none">English</button>
+          <button id="langEnBtn" class="lang-btn" onclick="setLanguage('en')">English</button>
           <button id="langArBtn" class="lang-btn active" onclick="setLanguage('ar')">العربية</button>
         </div>
         <div class="field-note" style="margin-top:6px">Affects titles and synopsis on content pages.</div>
@@ -3620,11 +3620,10 @@ function toggleEpgSetting(enabled) {
 }
 
 function applyTmdbToggleUI(enabled) {
-  const keyField = id('tmdbKeyField');
-  const enBtn    = id('langEnBtn');
-  if (keyField) { keyField.style.opacity = enabled ? '1' : '0.35'; keyField.style.pointerEvents = enabled ? '' : 'none'; }
-  if (enBtn)    { enBtn.style.opacity = enabled ? '1' : '0.35';    enBtn.style.pointerEvents    = enabled ? '' : 'none'; }
-  // Force Arabic if TMDB is off
+  const keyField  = id('tmdbKeyField');
+  const langField = id('tmdbLangField');
+  if (keyField)  keyField.style.display  = enabled ? '' : 'none';
+  if (langField) langField.style.display = enabled ? '' : 'none';
   if (!enabled) { S.cfg.language = 'ar'; syncLangButtons(); }
 }
 
