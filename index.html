@@ -4220,6 +4220,12 @@ function afterLogin() {
       if (_suppressFocusRestore) return;
       const cur = document.activeElement;
       if (!cur || cur === document.body) {
+        // On login screen restore to first login element, not rail
+        if (document.body.classList.contains('login')) {
+          const firstLogin = document.querySelector('#loginPanelEmail [data-tv-focus], #loginPanelManual [data-tv-focus]');
+          if (firstLogin && isVisible(firstLogin)) { firstLogin.focus({ preventScroll: true }); return; }
+          _ind.style.display = 'none'; return;
+        }
         // Restore to active rail item only — never to content cards
         const active = document.querySelector('.rail-item.active[data-tv-focus]');
         const first  = document.querySelector('.rail-item[data-tv-focus]');
@@ -4368,17 +4374,25 @@ function afterLogin() {
       e.preventDefault();
       const cur = document.activeElement;
 
-      // Login screen: strict vertical navigation between the 4 elements
+      // Login screen: strictly only navigate visible elements inside the login card
       if (document.body.classList.contains('login')) {
-        const loginEls = ['loginEmail', 'loginPassword', 'loginBtn', '.login-settings-link']
-          .map(s => s.startsWith('.') ? document.querySelector(s) : document.getElementById(s))
-          .filter(Boolean);
+        const loginEls = Array.from(document.querySelectorAll(
+          '#loginPanelEmail [data-tv-focus], #loginPanelManual [data-tv-focus]'
+        )).filter(el => {
+          const panel = el.closest('#loginPanelEmail, #loginPanelManual');
+          return panel && panel.style.display !== 'none' && isVisible(el);
+        });
+        // If focus escaped outside the card, pull it back to first login element
+        if (!loginEls.includes(cur) && loginEls.length) {
+          loginEls[0].focus({ preventScroll: true });
+          return;
+        }
         const idx = loginEls.indexOf(cur);
         if (idx !== -1) {
           if (dir === 'down' && idx < loginEls.length - 1) { loginEls[idx + 1].focus(); return; }
           if (dir === 'up'   && idx > 0)                   { loginEls[idx - 1].focus(); return; }
-          return; // block left/right on login screen
         }
+        return; // block all other directions on login screen
       }
 
       // Detail screen: Left/Right between action buttons
