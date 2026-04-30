@@ -1937,11 +1937,34 @@ async function refreshTunnelUrl() {
     const r = await fetch(TUNNEL_REGISTRY, { cache: 'no-store' });
     if (!r.ok) return;
     const { url } = await r.json();
-    if (url && url.startsWith('https://') && url !== S.cfg.liveProxy) {
-      S.cfg.liveProxy = url;
-      saveCfg();
+    if (url && url.startsWith('https://')) {
+      // Verify tunnel is actually alive before trusting the URL
+      try {
+        await fetch(url + '/ping', { signal: AbortSignal.timeout(4000) });
+      } catch {
+        showTunnelBanner(true);
+        return; // tunnel is down — don't update, avoid spinning
+      }
+      if (url !== S.cfg.liveProxy) { S.cfg.liveProxy = url; saveCfg(); }
+      showTunnelBanner(false);
     }
-  } catch { /* offline or Pi not running */ }
+  } catch { /* offline */ }
+}
+
+function showTunnelBanner(down) {
+  let banner = document.getElementById('tunnelBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'tunnelBanner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#b91c1c;color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-weight:600;display:none';
+    document.body.appendChild(banner);
+  }
+  if (down) {
+    banner.textContent = '⚠️ Pi tunnel is offline — restart your Pi to restore content';
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 // ─── Proxy ────────────────────────────────────────────────────────────────────
@@ -3505,8 +3528,24 @@ function openSettings() {
   const text = id('piStatusText');
   if (S.cfg.liveProxy) {
     dot.classList.remove('offline');
-    text.style.color = 'var(--live)';
-    text.textContent = 'Connected — ' + S.cfg.liveProxy.replace('https://', '');
+    text.style.color = 'var(--muted)';
+    text.textContent = 'Checking…';
+    // Actually ping the tunnel to verify it's alive
+    fetch(S.cfg.liveProxy + '/ping', { method: 'GET', signal: AbortSignal.timeout(5000) })
+      .then(r => {
+        if (r.ok || r.status === 404) { // 404 means server is up but no /ping route — still alive
+          dot.classList.remove('offline');
+          text.style.color = 'var(--live)';
+          text.textContent = 'Connected — ' + S.cfg.liveProxy.replace('https://', '');
+        } else {
+          throw new Error('bad status');
+        }
+      })
+      .catch(() => {
+        dot.classList.add('offline');
+        text.style.color = 'var(--err)';
+        text.textContent = 'Tunnel is down — restart your Pi';
+      });
   } else {
     dot.classList.add('offline');
     text.style.color = 'var(--err)';
