@@ -2125,12 +2125,14 @@ async function loadCurrent() {
 
   const titles = { live: 'Live TV', vod: 'Movies', series: 'Series' };
   id('panelTitle').textContent = 'Loading…';
-  setList('<div class="loading-row"><div class="spinner"></div>Loading…</div>');
+  setList('<div class="loading-row"><div class="spinner"></div><span id="loadPct">0%</span></div>');
+
+  const setLoadPct = p => { const el = id('loadPct'); if (el) el.textContent = p + '%'; };
 
   try {
-    if (S.mode === 'live')   await loadLive();
-    if (S.mode === 'vod')    await loadVOD();
-    if (S.mode === 'series') await loadSeries();
+    if (S.mode === 'live')   await loadLive(setLoadPct);
+    if (S.mode === 'vod')    await loadVOD(setLoadPct);
+    if (S.mode === 'series') await loadSeries(setLoadPct);
     data.loaded = true;
     id('panelTitle').textContent = titles[S.mode];
     renderCats();
@@ -2143,18 +2145,33 @@ async function loadCurrent() {
   }
 }
 
-async function loadLive() {
-  const [cats, items] = await Promise.all([xtream('get_live_categories'), xtream('get_live_streams')]);
+async function loadLive(onPct) {
+  let done = 0;
+  const tick = () => onPct?.(Math.round(++done / 2 * 100));
+  const [cats, items] = await Promise.all([
+    xtream('get_live_categories').then(r => { tick(); return r; }),
+    xtream('get_live_streams').then(r    => { tick(); return r; }),
+  ]);
   S.live.cats  = Array.isArray(cats)  ? cats  : [];
   S.live.items = Array.isArray(items) ? items : [];
 }
-async function loadVOD() {
-  const [cats, items] = await Promise.all([xtream('get_vod_categories'), xtream('get_vod_streams')]);
+async function loadVOD(onPct) {
+  let done = 0;
+  const tick = () => onPct?.(Math.round(++done / 2 * 100));
+  const [cats, items] = await Promise.all([
+    xtream('get_vod_categories').then(r => { tick(); return r; }),
+    xtream('get_vod_streams').then(r    => { tick(); return r; }),
+  ]);
   S.vod.cats  = Array.isArray(cats)  ? cats  : [];
   S.vod.items = Array.isArray(items) ? items : [];
 }
-async function loadSeries() {
-  const [cats, items] = await Promise.all([xtream('get_series_categories'), xtream('get_series')]);
+async function loadSeries(onPct) {
+  let done = 0;
+  const tick = () => onPct?.(Math.round(++done / 2 * 100));
+  const [cats, items] = await Promise.all([
+    xtream('get_series_categories').then(r => { tick(); return r; }),
+    xtream('get_series').then(r            => { tick(); return r; }),
+  ]);
   S.series.cats  = Array.isArray(cats)  ? cats  : [];
   S.series.items = Array.isArray(items) ? items : [];
 }
