@@ -3187,10 +3187,11 @@ async function loadCatBrowse(mode) {
   if (!S.cfg.server || !S.cfg.username || !S.password) { openSettings(); return; }
   const data = S[mode];
   if (!data.loaded) {
-    id('catBrowseRows').innerHTML = '<div class="cat-browse-empty"><div class="spinner"></div> Loading…</div>';
+    id('catBrowseRows').innerHTML = '<div class="cat-browse-empty"><div class="spinner"></div><span id="loadPct">0%</span></div>';
+    const setLoadPct = p => { const el = id('loadPct'); if (el) el.textContent = p + '%'; };
     try {
-      if (mode === 'vod')    await loadVOD();
-      if (mode === 'series') await loadSeries();
+      if (mode === 'vod')    await loadVOD(setLoadPct);
+      if (mode === 'series') await loadSeries(setLoadPct);
       data.loaded = true;
       refreshHomeRows();
     } catch(e) {
