@@ -4289,6 +4289,8 @@ function afterLogin() {
   }
 
   function focusFirst() {
+    // Never auto-focus on the login screen
+    if (document.body.classList.contains('login')) return;
     // Always prefer the active rail item; fall back to any visible rail item only
     const active = document.querySelector('.rail-item.active[data-tv-focus]');
     const first  = document.querySelector('.rail-item[data-tv-focus]');
@@ -4296,7 +4298,6 @@ function afterLogin() {
                  : (first  && isVisible(first))  ? first
                  : null;
     if (target) target.focus({ preventScroll: true });
-    // Never auto-focus content cards on screen transitions
   }
 
   // Auto-focus first element when screen changes (non-touch only)
